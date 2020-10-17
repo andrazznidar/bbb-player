@@ -1,7 +1,9 @@
 # bbb-player
+
 Download public BigBlueButton recordings and play them offline.
 
 ## Usage:
+
 1. Download and unzip this repo.
 2. Change working directory to this repo.
 3. Download a recoreded BBB meeting using: `python3 bbb-player.py --download URL` where URL is your viewing url. `For example: python3 bbb-player.py --download https://bbb.example.com/playback/presentation/2.0/playback.html?meetingId=70i9tyx7zbajoptzbav3ky1tuqxj3hgerup42jda-2177698461148`
