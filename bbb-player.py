@@ -4,8 +4,8 @@ import os
 import urllib.request
 import json
 from distutils.dir_util import copy_tree
-from http.server import HTTPServer, SimpleHTTPRequestHandler
 import traceback
+from flask import Flask
 
 
 def downloadFiles(baseURL, basePath):
@@ -101,16 +101,21 @@ elif(args.download == None and args.play != None):
     os.chdir('./downloadedMeetings/' + fileId)
 
     print('---------')
-    print('In your broswer open:')
-    print('localhost:8000/player/playback.html')
+    print('In your modern web browser open:')
+    print('http://localhost:5000/player/playback.html')
     print('Press CTRL+C when done.')
-    print('If the player does not load, try running "python3 -m http.server" in the folder named ' + fileId)
     print('---------')
 
-    # Based on https://stackoverflow.com/a/54413906
-    httpd = HTTPServer(('localhost', 8000), SimpleHTTPRequestHandler)
-    httpd.serve_forever()
+    # Based on https://stackoverflow.com/a/42791810
+    # Flask is needed for HTTP 206 Partial Content support.
 
+    app = Flask(__name__,
+                static_url_path='',
+                static_folder='./',
+                template_folder='')
+
+    if __name__ == "__main__":
+        app.run()
 
 else:
     print("Error parsing aguments. Use '--help' for help.")

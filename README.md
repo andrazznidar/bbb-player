@@ -7,14 +7,11 @@ Playback is to a great extent based on the [BigBlueButton](https://github.com/bi
 
 1. Download and unzip this repo.
 2. Change working directory to this repo.
-3. Download a recoreded BBB meeting using: `python3 bbb-player.py --download URL` where URL is your viewing url.
+3. Install `requrements.txt` using: `pip3 install flask`
+4. Download a recoreded BBB meeting using: `python3 bbb-player.py --download URL` where URL is your viewing url.
    > Example: `python3 bbb-player.py --download https://bbb.example.com/playback/presentation/2.0/playback.html?meetingId=70i9tyx7zbajoptzbav3ky1tuqxj3hgerup42jda-2177698461148`
-4. Wait for download to complete.
-5. Play the downloaded metting using: `python3 bbb-player.py --play meetingID` where meetingID is your meetingID from URL and is equal to a name of a folder inside `./downloadedMeetings`.
+5. Wait for download to complete.
+6. Play the downloaded metting using: `python3 bbb-player.py --play meetingID` where meetingID is your meetingID from URL and is equal to a name of a folder inside `./downloadedMeetings`.
    > Example: `python3 bbb-player.py --play 70i9tyx7zbajoptzbav3ky1tuqxj3hgerup42jda-2177698461148`
-6. Open a modern web browser and play the downloaded metting on `localhost:8000/player/playback.html`
-7. When done press `CTRL+C` to stop the local server.
-
-## Know issues
-
-If the player does not load, try running "python3 -m http.server" in the folder named `meetingID`.
+7. Open a modern web browser and play the downloaded meeting on `http://localhost:8000/player/playback.html`
+8. When done press `CTRL+C` to stop the local server.
