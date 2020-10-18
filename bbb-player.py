@@ -104,6 +104,7 @@ elif(args.download == None and args.play != None):
     print('In your broswer open:')
     print('localhost:8000/player/playback.html')
     print('Press CTRL+C when done.')
+    print('If the player does not load, try running "python3 -m http.server" in the folder named ' + fileId)
     print('---------')
 
     # Based on https://stackoverflow.com/a/54413906
