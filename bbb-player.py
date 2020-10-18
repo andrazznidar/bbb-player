@@ -5,6 +5,7 @@ import urllib.request
 import json
 from distutils.dir_util import copy_tree
 from http.server import HTTPServer, SimpleHTTPRequestHandler
+import traceback
 
 
 def downloadFiles(baseURL, basePath):
@@ -14,13 +15,14 @@ def downloadFiles(baseURL, basePath):
     for file in filesForDL:
         print('Downloading ' + file)
         downloadURL = baseURL + file
-        # print(downloadURL)
+        print(downloadURL)
         savePath = basePath + file
-        # print(savePath)
+        print(savePath)
 
         try:
             urllib.request.urlretrieve(downloadURL, savePath)
-        except:
+        except Exception:
+            traceback.print_exc()
             print("Did not download " + file)
 
 
@@ -30,9 +32,7 @@ def downloadSlides(baseURL, basePath):
         data = json.load(f)
         for element in data:
             print(element)
-            noSlides = 0
-            for slide in data[element]:
-                noSlides = noSlides + 1
+            noSlides = len(data[element])
             print(noSlides)
             createFolder(basePath + '/presentation/' + element)
             for i in range(1, noSlides+1):
