@@ -7,7 +7,7 @@ Playback is to a great extent based on the [BigBlueButton](https://github.com/bi
 
 1. Download and unzip this repo.
 2. Change working directory to this repo.
-3. Install `requrements.txt` using: `pip3 install flask`
+3. Install `requrements.txt` using: `pip3 install -r requirements.txt`
 4. Download a recoreded BBB meeting using: `python3 bbb-player.py --download URL` where URL is your viewing url.
    > Example: `python3 bbb-player.py --download https://bbb.example.com/playback/presentation/2.0/playback.html?meetingId=70i9tyx7zbajoptzbav3ky1tuqxj3hgerup42jda-2177698461148`
 5. Wait for download to complete.
