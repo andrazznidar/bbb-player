@@ -4,3 +4,7 @@
 ###### Requirements without Version Specifiers, used for --play only. ######
 flask
 #
+#
+###### Requirements without Version Specifiers, used for --combine only. ######
+ffmpeg-python
+#
