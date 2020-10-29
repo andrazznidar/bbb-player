@@ -130,11 +130,15 @@ elif(args.play != None and args.download == args.combine == None):
 
     # Based on https://stackoverflow.com/a/42791810
     # Flask is needed for HTTP 206 Partial Content support.
-
     app = Flask(__name__,
                 static_url_path='',
                 static_folder='./',
                 template_folder='')
+
+    # Based on https://stackoverflow.com/a/37331139
+    # This is needed for playback of multiple meetings in short succession.
+    app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
+    app.config['TESTING'] = True
 
     if __name__ == "__main__":
         app.run()
