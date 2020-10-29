@@ -5,7 +5,7 @@ import urllib.request
 import json
 from distutils.dir_util import copy_tree
 import traceback
-from flask import Flask
+
 
 
 def ffmpegCombine(suffix):
@@ -119,6 +119,15 @@ if(args.download != None and args.play == args.combine == None):
 elif(args.play != None and args.download == args.combine == None):
     print("Play")
     fileId = args.play[0]
+
+    try:
+        from flask import Flask
+    except:
+        print("Flask not imported. Try running:")
+        print("pip3 install Flask")
+        exit(1)
+
+    print("Flask imported.")
 
     os.chdir('./downloadedMeetings/' + fileId)
 
