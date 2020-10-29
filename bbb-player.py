@@ -7,7 +7,6 @@ from distutils.dir_util import copy_tree
 import traceback
 
 
-
 def ffmpegCombine(suffix):
     try:
         import ffmpeg
@@ -129,7 +128,16 @@ elif(args.play != None and args.download == args.combine == None):
 
     print("Flask imported.")
 
-    os.chdir('./downloadedMeetings/' + fileId)
+    print(os.getcwd())
+
+    try:
+        os.chdir('./downloadedMeetings/' + fileId)
+    except:
+        print("Meeting with ID " + fileId +
+              " is not downloaded. Download it first using the --download command")
+        exit(1)
+
+    print(os.getcwd())
 
     print('---------')
     print('In your modern web browser open:')
@@ -141,7 +149,7 @@ elif(args.play != None and args.download == args.combine == None):
     # Flask is needed for HTTP 206 Partial Content support.
     app = Flask(__name__,
                 static_url_path='',
-                static_folder='./',
+                static_folder=os.getcwd(),
                 template_folder='')
 
     # Based on https://stackoverflow.com/a/37331139
