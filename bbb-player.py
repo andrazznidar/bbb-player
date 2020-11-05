@@ -6,6 +6,8 @@ import json
 from distutils.dir_util import copy_tree
 import traceback
 
+from progressist import ProgressBar
+bar = ProgressBar(template="Download |{animation}|{tta}| {done:B}/{total:B}")
 
 def ffmpegCombine(suffix):
     try:
@@ -39,7 +41,7 @@ def downloadFiles(baseURL, basePath):
         print(savePath)
 
         try:
-            urllib.request.urlretrieve(downloadURL, savePath)
+            urllib.request.urlretrieve(downloadURL, savePath, reporthook=bar.on_urlretrieve)
         except Exception:
             traceback.print_exc()
             print("Did not download " + file)
@@ -136,7 +138,7 @@ elif(args.play != None and args.download == args.combine == None):
     fileId = args.play[0]
 
     try:
-        from flask import Flask
+        from flask import Flask, redirect
     except:
         print("Flask not imported. Try running:")
         print("pip3 install Flask")
@@ -167,6 +169,9 @@ elif(args.play != None and args.download == args.combine == None):
                 static_url_path='',
                 static_folder=os.getcwd(),
                 template_folder='')
+
+    @app.route('/')
+    def redirect_1(): return redirect("http://localhost:5000/player/playback.html", code=302)
 
     # Based on https://stackoverflow.com/a/37331139
     # This is needed for playback of multiple meetings in short succession.
