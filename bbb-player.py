@@ -28,8 +28,8 @@ def ffmpegCombine(suffix):
 
 
 def downloadFiles(baseURL, basePath):
-    filesForDL = ["captions.json", "cursor.xml", "deskshare.xml", "metadata.xml",
-                  "panzooms.xml", "presentation_text.json", "shapes.svg", "slides_new.xml", "video/webcams.webm", "video/webcams.mp4", "deskshare/deskshare.webm", "deskshare/deskshare.mp4"]
+    filesForDL = ["captions.json", "cursor.xml", "deskshare.xml", "presentation/deskshare.png", "metadata.xml", "panzooms.xml", "presentation_text.json",
+                  "shapes.svg", "slides_new.xml", "video/webcams.webm", "video/webcams.mp4", "deskshare/deskshare.webm", "deskshare/deskshare.mp4"]
 
     for file in filesForDL:
         print('Downloading ' + file)
@@ -93,8 +93,24 @@ args = parser.parse_args()
 if(args.download != None and args.play == args.combine == None):
     print("Download")
     inputURL = args.download[0]
-    meetingId = urlparse(inputURL).query[10:]
-    print(meetingId)
+
+    # Check if meeting ID is in URL query or in URL path.
+    if(urlparse(inputURL).query[:10] == 'meetingId='):
+        print("Meeting ID presumed in url query.")
+        meetingId = urlparse(inputURL).query[10:]
+    elif(len(urlparse(inputURL).path) >= 59 and urlparse(inputURL).path[-55] == '/' and urlparse(inputURL).path[-57] == '.' and urlparse(inputURL).path[-59] == '/'):
+        print("Meeting ID presumed in url path.")
+        meetingId = urlparse(inputURL).path[-54:]
+    else:
+        print("No meeting ID detected. Aborting")
+        exit(1)
+
+    if (meetingId == ''):
+        print("Meeting ID detected but is empty. Aborting")
+        exit(1)
+    else:
+        print(meetingId)
+
     baseURL = urlparse(inputURL).scheme + '://' + \
         urlparse(inputURL).netloc + '/presentation/' + meetingId + '/'
     print(baseURL)
