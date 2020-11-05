@@ -6,8 +6,6 @@ import json
 from distutils.dir_util import copy_tree
 import traceback
 
-from progressist import ProgressBar
-bar = ProgressBar(template="Download |{animation}|{tta}| {done:B}/{total:B}")
 
 def ffmpegCombine(suffix):
     try:
@@ -29,7 +27,7 @@ def ffmpegCombine(suffix):
     ffmpeg.run(output)
 
 
-def downloadFiles(baseURL, basePath):
+def downloadFiles(baseURL, basePath, progressistInstalled):
     filesForDL = ["captions.json", "cursor.xml", "deskshare.xml", "presentation/deskshare.png", "metadata.xml", "panzooms.xml", "presentation_text.json",
                   "shapes.svg", "slides_new.xml", "video/webcams.webm", "video/webcams.mp4", "deskshare/deskshare.webm", "deskshare/deskshare.mp4"]
 
@@ -40,14 +38,22 @@ def downloadFiles(baseURL, basePath):
         savePath = basePath + file
         print(savePath)
 
-        try:
-            urllib.request.urlretrieve(downloadURL, savePath, reporthook=bar.on_urlretrieve)
-        except Exception:
-            traceback.print_exc()
-            print("Did not download " + file)
+        if(progressistInstalled == True):
+            try:
+                urllib.request.urlretrieve(
+                    downloadURL, savePath, reporthook=bar.on_urlretrieve)
+            except Exception:
+                traceback.print_exc()
+                print("Did not download " + file)
+        else:
+            try:
+                urllib.request.urlretrieve(downloadURL, savePath)
+            except Exception:
+                traceback.print_exc()
+                print("Did not download " + file)
 
 
-def downloadSlides(baseURL, basePath):
+def downloadSlides(baseURL, basePath, progressistInstalled):
     # Part of this is based on https://www.programiz.com/python-programming/json
     with open(basePath + '/presentation_text.json') as f:
         data = json.load(f)
@@ -64,11 +70,20 @@ def downloadSlides(baseURL, basePath):
 
                 print(downloadURL)
                 print(savePath)
-                try:
-                    urllib.request.urlretrieve(downloadURL, savePath)
-                except:
-                    print("Did not download " + element +
-                          '/slide-' + str(i) + '.png')
+
+                if(progressistInstalled == True):
+                    try:
+                        urllib.request.urlretrieve(
+                            downloadURL, savePath, reporthook=bar.on_urlretrieve)
+                    except:
+                        print("Did not download " + element +
+                              '/slide-' + str(i) + '.png')
+                else:
+                    try:
+                        urllib.request.urlretrieve(downloadURL, savePath)
+                    except:
+                        print("Did not download " + element +
+                              '/slide-' + str(i) + '.png')
 
 
 def createFolder(path):
@@ -126,10 +141,20 @@ if(args.download != None and args.play == args.combine == None):
         createFolder(folderPath + '/deskshare')
         createFolder(folderPath + '/presentation')
 
-        downloadFiles(baseURL, folderPath + '/')
-        downloadSlides(baseURL, folderPath)
-        copy_tree("./player", "downloadedMeetings/" + meetingId + "/player")
+        try:
+            from progressist import ProgressBar
+            bar = ProgressBar(
+                template="Download |{animation}|{tta}| {done:B}/{total:B} at {speed:B}/s")
+            progressistInstalled = True
+        except:
+            print(
+                "progressist not imported. Progress bar will not be shown. Try running:")
+            print("pip3 install progressist")
+            progressistInstalled = False
 
+        downloadFiles(baseURL, folderPath + '/', progressistInstalled)
+        downloadSlides(baseURL, folderPath, progressistInstalled)
+        copy_tree("./player", "downloadedMeetings/" + meetingId + "/player")
     else:
         print("Folder for this meeting already exists.")
 
@@ -171,7 +196,8 @@ elif(args.play != None and args.download == args.combine == None):
                 template_folder='')
 
     @app.route('/')
-    def redirect_1(): return redirect("http://localhost:5000/player/playback.html", code=302)
+    def redirect_1(): return redirect(
+        "http://localhost:5000/player/playback.html", code=307)
 
     # Based on https://stackoverflow.com/a/37331139
     # This is needed for playback of multiple meetings in short succession.

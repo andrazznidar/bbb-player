@@ -8,6 +8,7 @@ flask
 ###### Requirements without Version Specifiers, used for --combine only. ######
 ffmpeg-python
 #
-
-# for progress bar with time left when downloading presentations
+#
+###### Requirements without Version Specifiers, --download only. ######
 progressist
+#
