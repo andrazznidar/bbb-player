@@ -94,6 +94,28 @@ def downloadSlides(baseURL, basePath):
                 except Exception:
                     logger.exception("")
 
+            createFolder(os.path.join(
+                basePath, 'presentation', element, 'thumbnails'))
+            for i in range(1, noSlides+1):
+                downloadURL = baseURL + 'presentation/' + \
+                    element + '/thumbnails/thumb-' + str(i) + '.png'
+                savePath = os.path.join(basePath, 'presentation',
+                                        element, 'thumbnails', 'thumb-{}.png'.format(i))
+
+                logger.debug(downloadURL)
+                logger.debug(savePath)
+
+                try:
+                    urllib.request.urlretrieve(
+                        downloadURL, savePath, reporthook=bar.on_urlretrieve if bar else None)
+                except urllib.error.HTTPError as e:
+                    # traceback.print_exc()
+                    if e.code == 404:
+                        logger.warning("Did not download " + element +
+                                       '/thumbnails/thumb-' + str(i) + '.png')
+                except Exception:
+                    logger.exception("")
+
 
 def createFolder(path):
     # Create meeting folders, based on https://stackabuse.com/creating-and-deleting-directories-with-python/
