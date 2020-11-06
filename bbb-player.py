@@ -44,8 +44,7 @@ def ffmpegCombine(suffix, fileName=DEFAULT_COMBINED_VIDEO_NAME):
 
 def downloadFiles(baseURL, basePath):
     filesForDL = ["captions.json", "cursor.xml", "deskshare.xml", "presentation/deskshare.png", "metadata.xml", "panzooms.xml", "presentation_text.json",
-                  "shapes.svg", "slides_new.xml", "video/webcams.webm", "video/webcams.mp4", "deskshare/deskshare.webm", "deskshare/deskshare.mp4",
-                  "favicon.ico"]
+                  "shapes.svg", "slides_new.xml", "video/webcams.webm", "video/webcams.mp4", "deskshare/deskshare.webm", "deskshare/deskshare.mp4"]
 
     for file in filesForDL:
         logger.info('Downloading ' + file)
@@ -57,9 +56,12 @@ def downloadFiles(baseURL, basePath):
         try:
             urllib.request.urlretrieve(
                 downloadURL, savePath, reporthook=bar.on_urlretrieve if bar else None)
-        except Exception:
+        except urllib.error.HTTPError as e:
             # traceback.print_exc()
-            logger.exception("Did not download " + file)
+            if e.code == 404:
+                logger.warning(f"Did not download {file} because of 404 error")
+        except Exception:
+            logger.exception("")
 
 
 def downloadSlides(baseURL, basePath):
@@ -83,9 +85,13 @@ def downloadSlides(baseURL, basePath):
                 try:
                     urllib.request.urlretrieve(
                         downloadURL, savePath, reporthook=bar.on_urlretrieve if bar else None)
-                except:
-                    logger.warning("Did not download " + element +
-                          '/slide-' + str(i) + '.png')
+                except urllib.error.HTTPError as e:
+                    # traceback.print_exc()
+                    if e.code == 404:
+                        logger.warning("Did not download " + element +
+                              '/slide-' + str(i) + '.png')
+                except Exception:
+                    logger.exception("")
 
 
 def createFolder(path):
@@ -200,11 +206,11 @@ elif(args.play != None and args.name == args.download == args.combine == None):
 
     logger.debug(os.getcwd())
 
-    print('---------')
-    print('In your modern web browser open:')
-    print('http://localhost:5000/player/playback.html')
-    print('Press CTRL+C when done.')
-    print('---------')
+    logger.info('---------')
+    logger.info('In your modern web browser open:')
+    logger.info('http://localhost:5000')
+    logger.info('Press CTRL+C when done.')
+    logger.info('---------')
 
     # Based on https://stackoverflow.com/a/42791810
     # Flask is needed for HTTP 206 Partial Content support.
