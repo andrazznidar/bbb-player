@@ -5,9 +5,17 @@ import urllib.request
 import json
 from distutils.dir_util import copy_tree
 import traceback
+import re
+from datetime import timedelta
 
 
-def ffmpegCombine(suffix):
+DOWNLOADED_FULLY_FILENAME = "rec_fully_downloaded.txt"
+DOWNLOADED_MEETINGS_FOLDER = "downloadedMeetings"
+DEFAULT_COMBINED_VIDEO_NAME = "combine-output"
+COMBINED_VIDEO_FORMAT = "mkv"
+
+
+def ffmpegCombine(suffix, fileName=DEFAULT_COMBINED_VIDEO_NAME):
     try:
         import ffmpeg
     except:
@@ -21,39 +29,33 @@ def ffmpegCombine(suffix):
     audio_file = ffmpeg.input('./video/webcams.' + suffix)
 
     # Based on https://www.reddit.com/r/learnpython/comments/ey41dp/merging_video_and_audio_using_ffmpegpython/fgf1oyq/
-    output = ffmpeg.output(video_file, audio_file, './combine-output.mkv',
+    output = ffmpeg.output(video_file, audio_file, f'{fileName}.{COMBINED_VIDEO_FORMAT}',
                            vcodec='copy', acodec='copy', map='-1:v:0', strict='very')
 
     ffmpeg.run(output)
 
 
-def downloadFiles(baseURL, basePath, progressistInstalled):
+def downloadFiles(baseURL, basePath):
     filesForDL = ["captions.json", "cursor.xml", "deskshare.xml", "presentation/deskshare.png", "metadata.xml", "panzooms.xml", "presentation_text.json",
-                  "shapes.svg", "slides_new.xml", "video/webcams.webm", "video/webcams.mp4", "deskshare/deskshare.webm", "deskshare/deskshare.mp4"]
+                  "shapes.svg", "slides_new.xml", "video/webcams.webm", "video/webcams.mp4", "deskshare/deskshare.webm", "deskshare/deskshare.mp4",
+                  "favicon.ico"]
 
     for file in filesForDL:
         print('Downloading ' + file)
         downloadURL = baseURL + file
         print(downloadURL)
-        savePath = basePath + file
+        savePath = os.path.join(basePath, file)
         print(savePath)
 
-        if(progressistInstalled == True):
-            try:
-                urllib.request.urlretrieve(
-                    downloadURL, savePath, reporthook=bar.on_urlretrieve)
-            except Exception:
-                traceback.print_exc()
-                print("Did not download " + file)
-        else:
-            try:
-                urllib.request.urlretrieve(downloadURL, savePath)
-            except Exception:
-                traceback.print_exc()
-                print("Did not download " + file)
+        try:
+            urllib.request.urlretrieve(
+                downloadURL, savePath, reporthook=bar.on_urlretrieve if bar else None)
+        except Exception:
+            traceback.print_exc()
+            print("Did not download " + file)
 
 
-def downloadSlides(baseURL, basePath, progressistInstalled):
+def downloadSlides(baseURL, basePath):
     # Part of this is based on https://www.programiz.com/python-programming/json
     with open(basePath + '/presentation_text.json') as f:
         data = json.load(f)
@@ -61,29 +63,22 @@ def downloadSlides(baseURL, basePath, progressistInstalled):
             print(element)
             noSlides = len(data[element])
             print(noSlides)
-            createFolder(basePath + '/presentation/' + element)
+            createFolder(os.path.join(basePath, 'presentation', element))
             for i in range(1, noSlides+1):
                 downloadURL = baseURL + 'presentation/' + \
                     element + '/slide-' + str(i) + '.png'
-                savePath = basePath + '/presentation/' + \
-                    element + '/slide-' + str(i) + '.png'
+                savePath = os.path.join(basePath, 'presentation',
+                                        element,  'slide-{}.png'.format(i))
 
                 print(downloadURL)
                 print(savePath)
 
-                if(progressistInstalled == True):
-                    try:
-                        urllib.request.urlretrieve(
-                            downloadURL, savePath, reporthook=bar.on_urlretrieve)
-                    except:
-                        print("Did not download " + element +
-                              '/slide-' + str(i) + '.png')
-                else:
-                    try:
-                        urllib.request.urlretrieve(downloadURL, savePath)
-                    except:
-                        print("Did not download " + element +
-                              '/slide-' + str(i) + '.png')
+                try:
+                    urllib.request.urlretrieve(
+                        downloadURL, savePath, reporthook=bar.on_urlretrieve if bar else None)
+                except:
+                    print("Did not download " + element +
+                          '/slide-' + str(i) + '.png')
 
 
 def createFolder(path):
@@ -98,67 +93,82 @@ def createFolder(path):
 
 # Parse the command line arguments
 parser = argparse.ArgumentParser()
-group = parser.add_mutually_exclusive_group()
-group.add_argument("--download", type=str, nargs=1,
+# group = parser.add_mutually_exclusive_group()
+group = parser
+group.add_argument("-d", "--download", type=str, nargs=1,
                    help="download the BBB conference linked here")
-group.add_argument("--play", type=str, nargs=1,
-                   help="play BBB conference saved locally with ID")
-group.add_argument("--combine", type=str, nargs=1,
-                   help="combine deskshare+audio of a BBB conference saved localy with ID")
+group.add_argument("-n", "--name", type=str, nargs=1,
+                   help="define name of the conference (e.g. lecture1)")
+group.add_argument("-p", "--play", type=str, nargs=1,
+                   help="play a BBB conference saved locally. Full id string \
+                   (e.g. d01a98b1a40329c5a43429ae487a599f437033b8-16328634322962) or \
+                   the name you provided when downloading (e.g. lecture1)")
+group.add_argument("-c", "--combine", type=str, nargs=1,
+                   help="combine deskshare+audio of a BBB conference saved localy. Full id string \
+                   (e.g. d01a98b1a40329c5a43429ae487a599f437033b8-16328634322962) or \
+                   the name you provided when downloading (e.g. lecture1)")
 args = parser.parse_args()
 
 if(args.download != None and args.play == args.combine == None):
     print("Download")
     inputURL = args.download[0]
 
-    # Check if meeting ID is in URL query or in URL path.
-    if(urlparse(inputURL).query[:10] == 'meetingId='):
-        print("Meeting ID presumed in url query.")
-        meetingId = urlparse(inputURL).query[10:]
-    elif(len(urlparse(inputURL).path) >= 59 and urlparse(inputURL).path[-55] == '/' and urlparse(inputURL).path[-57] == '.' and urlparse(inputURL).path[-59] == '/'):
-        print("Meeting ID presumed in url path.")
-        meetingId = urlparse(inputURL).path[-54:]
+    meetingNameWanted = None
+    if args.name:
+        meetingNameWanted = args.name[0]
+
+    # get meeting id from url https://regex101.com/r/UjqGeo/3
+    matchesURL = re.search(r"/?(\d+\.\d+)/.*?([0-9a-f]{40}-\d{13})/?",
+                          inputURL,
+                          re.IGNORECASE)
+    if matchesURL and len(matchesURL.groups()) == 2:
+        bbbVersion = matchesURL.group(1)
+        meetingId = matchesURL.group(2)
+        print("Detected bbb version:\t{}\nDetected meeting id:\t{}".format(bbbVersion, meetingId))
     else:
-        print("No meeting ID detected. Aborting")
-        exit(1)
+        raise ValueError("Meeting ID could not be found in the url.")
 
-    if (meetingId == ''):
-        print("Meeting ID detected but is empty. Aborting")
-        exit(1)
+    baseURL = "{}://{}/presentation/{}/".format(urlparse(inputURL).scheme,
+                                                urlparse(inputURL).netloc,
+                                                meetingId)
+    print("Base url: {}".format(baseURL))
+
+    if meetingNameWanted:
+        folderPath = os.path.join(os.getcwd(), DOWNLOADED_MEETINGS_FOLDER, meetingNameWanted)
     else:
-        print(meetingId)
+        folderPath = os.path.join(os.getcwd(), DOWNLOADED_MEETINGS_FOLDER, meetingId)
+    print("Folder path: {}".format(folderPath))
 
-    baseURL = urlparse(inputURL).scheme + '://' + \
-        urlparse(inputURL).netloc + '/presentation/' + meetingId + '/'
-    print(baseURL)
+    if os.path.isfile(os.path.join(folderPath, DOWNLOADED_FULLY_FILENAME)):
+        print("Meeting is already downloaded.")
+    else:
+        print("Folder already created but not everything was downloaded. Retrying.")
 
-    folderPath = "./downloadedMeetings/" + meetingId
-
-    if(os.path.isdir(folderPath) == False):
-
-        createFolder(folderPath)
-        createFolder(folderPath + '/video')
-        createFolder(folderPath + '/deskshare')
-        createFolder(folderPath + '/presentation')
+        foldersToCreate = [os.path.join(folderPath, x) for x in ["", "video", "deskshare", "presentation"]]
+        # print(foldersToCreate)
+        for i in foldersToCreate:
+            createFolder(i)
 
         try:
             from progressist import ProgressBar
-            bar = ProgressBar(
+            bar = ProgressBar(throttle=timedelta(seconds=1),
                 template="Download |{animation}|{tta}| {done:B}/{total:B} at {speed:B}/s")
-            progressistInstalled = True
         except:
-            print(
-                "progressist not imported. Progress bar will not be shown. Try running:")
+            print("progressist not imported. Progress bar will not be shown. Try running:")
             print("pip3 install progressist")
-            progressistInstalled = False
+            bar = None
 
-        downloadFiles(baseURL, folderPath + '/', progressistInstalled)
-        downloadSlides(baseURL, folderPath, progressistInstalled)
-        copy_tree("./player", "downloadedMeetings/" + meetingId + "/player")
-    else:
-        print("Folder for this meeting already exists.")
+        downloadFiles(baseURL, folderPath)
+        downloadSlides(baseURL, folderPath)
+        copy_tree(os.path.join(os.getcwd(), "player"),
+                  os.path.join(folderPath, "player"))
+        with open(os.path.join(folderPath, DOWNLOADED_FULLY_FILENAME), 'w') as fp: 
+            # write a downloaded_fully file to mark a successful download
+            # todo: check if files were really dl-ed (make a json of files to download and
+            #          check them one by one on success)
+            pass
 
-elif(args.play != None and args.download == args.combine == None):
+elif(args.play != None and args.name == args.download == args.combine == None):
     print("Play")
     fileId = args.play[0]
 
@@ -174,9 +184,9 @@ elif(args.play != None and args.download == args.combine == None):
     print(os.getcwd())
 
     try:
-        os.chdir('./downloadedMeetings/' + fileId)
+        os.chdir(os.path.join(os.getcwd(), 'downloadedMeetings', fileId))
     except:
-        print("Meeting with ID " + fileId +
+        print("Meeting with ID/name " + fileId +
               " is not downloaded. Download it first using the --download command")
         exit(1)
 
@@ -207,28 +217,43 @@ elif(args.play != None and args.download == args.combine == None):
     if __name__ == "__main__":
         app.run()
 
-elif(args.combine != None and args.download == args.play == None):
+elif(args.combine != None and args.name == args.download == args.play == None):
     print("Combine")
-    fileId = args.combine[0]
+    fileIdOrName = args.combine[0]
 
     try:
-        os.chdir('./downloadedMeetings/' + fileId)
+        os.chdir('./downloadedMeetings/' + fileIdOrName)
     except:
-        print("Meeting with ID " + fileId +
-              " is not downloaded. Download it first using the --download command")
+        print(f"Meeting with ID {fileIdOrName} \
+                is not downloaded. Download it first using the --download command")
         exit(1)
 
-    if(os.path.isfile('./combine-output.mkv')):
-        print('./combine-output.mkv already found. Aborting.')
+    matchesName = re.match(r"([0-9a-f]{40}-\d{13})", fileIdOrName, re.IGNORECASE)
+    if matchesName:
+        # if file id/name looks like bbb 54 char string use a simple predefined name
+        meetingId = matchesName.group(0)
+        print(f"Extracted meeting id: {meetingId} from provided name")
+        print(f"Setting output file name to {DEFAULT_COMBINED_VIDEO_NAME}")
+        fileName = DEFAULT_COMBINED_VIDEO_NAME
+    else:
+        fileName = fileIdOrName
+        # todo: add name parsing from -n
+
+
+    if(os.path.isfile(f'./{fileName}.{COMBINED_VIDEO_FORMAT}')):
+        print(f'./{DEFAULT_COMBINED_VIDEO_NAME}.{COMBINED_VIDEO_FORMAT} already found. Aborting.')
         exit(1)
     elif(os.path.isfile('./deskshare/deskshare.webm') and os.path.isfile('./video/webcams.webm')):
-        ffmpegCombine('webm')
+        ffmpegCombine('webm', fileName=fileName)
     elif(os.path.isfile('./deskshare/deskshare.mp4') and os.path.isfile('./video/webcams.mp4')):
-        ffmpegCombine('mp4')
+        ffmpegCombine('mp4', fileName=fileName)
     else:
         print('Video files not found, this meeting might not be supported.')
+        exit(1)
 
     print('Your combined video file is located here:')
-    print('./downloadedMeetings/' + fileId + '/combine-output.mkv')
+    print(f'./downloadedMeetings/{fileIdOrName}/{fileName}.{COMBINED_VIDEO_FORMAT}')
+
 else:
     print("Error parsing aguments. Use '--help' for help.")
+
