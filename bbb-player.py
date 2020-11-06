@@ -285,4 +285,4 @@ elif(args.combine != None and args.name == args.download == args.play == None):
         f'./downloadedMeetings/{fileIdOrName}/{fileName}.{COMBINED_VIDEO_FORMAT}')
 
 else:
-    logger.error("Error parsing aguments. Use '--help' for help.")
+    logger.error("Error parsing arguments. Use '--help' for help.")
