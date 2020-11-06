@@ -120,7 +120,14 @@ group.add_argument("-c", "--combine", type=str, nargs=1,
                    help="combine deskshare+audio of a BBB conference saved localy. Full id string \
                    (e.g. d01a98b1a40329c5a43429ae487a599f437033b8-16328634322962) or \
                    the name you provided when downloading (e.g. lecture1)")
+group.add_argument("-v", "--verbose", action="store_true",
+                   help="verbose logging")
+
 args = parser.parse_args()
+
+if args.verbose:
+    LOGGING_LEVEL = logging.DEBUG
+    logger.setLevel(LOGGING_LEVEL)
 
 if(args.download != None and args.play == args.combine == None):
     logger.info("Download")
