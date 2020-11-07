@@ -210,8 +210,14 @@ if(args.download != None and args.play == args.combine == None):
 
         downloadFiles(baseURL, folderPath)
         downloadSlides(baseURL, folderPath)
-        copy_tree(os.path.join(os.getcwd(), "player"),
-                  os.path.join(folderPath, "player"))
+
+        # Sunsetting the 2.0 player in favour of 2.3 player
+        # copy_tree(os.path.join(os.getcwd(), "player"),
+        #           os.path.join(folderPath, "player"))
+
+        # Copy the 2.3 player
+        copy_tree(os.path.join(os.getcwd(), "player23"), folderPath)
+
         with open(os.path.join(folderPath, DOWNLOADED_FULLY_FILENAME), 'w') as fp:
             # write a downloaded_fully file to mark a successful download
             # todo: check if files were really dl-ed (make a json of files to download and
@@ -253,9 +259,14 @@ elif(args.play != None and args.name == args.download == args.combine == None):
                 static_folder=os.getcwd(),
                 template_folder='')
 
-    @app.route('/')
-    def redirect_1(): return redirect(
-        "http://localhost:5000/player/playback.html", code=307)
+    if(os.path.isfile(os.path.join(os.getcwd(), 'index.html')) and os.path.isfile(os.path.join(os.getcwd(), 'asset-manifest.json'))):
+        @app.route('/')
+        def redirect_1(): return redirect(
+            "http://localhost:5000/index.html", code=307)
+    else:
+        @app.route('/')
+        def redirect_1(): return redirect(
+            "http://localhost:5000/player/playback.html", code=307)
 
     # Based on https://stackoverflow.com/a/37331139
     # This is needed for playback of multiple meetings in short succession.
