@@ -11,4 +11,5 @@ ffmpeg-python
 #
 ###### Requirements without Version Specifiers, --download only. ######
 progressist
+pySmartDL
 #
