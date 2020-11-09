@@ -9,6 +9,13 @@ import re
 from datetime import timedelta
 import logging
 
+try:
+    from pySmartDL import SmartDL
+    smartDlEnabled = True
+except ImportError:
+    logger.warning("pySmartDL not imported, using urllib instead")
+    smartDlEnabled = False
+
 
 LOGGING_LEVEL = logging.INFO
 # LOGGING_LEVEL = logging.DEBUG
@@ -17,7 +24,7 @@ DOWNLOADED_MEETINGS_FOLDER = "downloadedMeetings"
 DEFAULT_COMBINED_VIDEO_NAME = "combine-output"
 COMBINED_VIDEO_FORMAT = "mkv"
 
-logging.basicConfig(format="[%(asctime)s] [%(levelname)8s]: %(message)s",
+logging.basicConfig(format="[%(asctime)s -%(levelname)8s]: %(message)s",
                     datefmt="%H:%M:%S",
                     level=LOGGING_LEVEL)
 logger = logging.getLogger('bbb-player')
@@ -47,16 +54,20 @@ def downloadFiles(baseURL, basePath):
     filesForDL = ["captions.json", "cursor.xml", "deskshare.xml", "presentation/deskshare.png", "metadata.xml", "panzooms.xml", "presentation_text.json",
                   "shapes.svg", "slides_new.xml", "video/webcams.webm", "video/webcams.mp4", "deskshare/deskshare.webm", "deskshare/deskshare.mp4"]
 
-    for file in filesForDL:
-        logger.info('Downloading ' + file)
+    for i, file in enumerate(filesForDL):
+        logger.info(f'[{i+1}/{len(filesForDL)}] Downloading {file}')
         downloadURL = baseURL + file
         logger.debug(downloadURL)
         savePath = os.path.join(basePath, file)
         logger.debug(savePath)
 
         try:
-            urllib.request.urlretrieve(
-                downloadURL, savePath, reporthook=bar.on_urlretrieve if bar else None)
+            if smartDlEnabled:
+                smartDl = SmartDL(downloadURL, savePath)
+                smartDl.start()
+            else:
+                urllib.request.urlretrieve(
+                    downloadURL, savePath, reporthook=bar.on_urlretrieve if bar else None)
         except urllib.error.HTTPError as e:
             # traceback.print_exc()
             if e.code == 404:
@@ -69,12 +80,15 @@ def downloadSlides(baseURL, basePath):
     # Part of this is based on https://www.programiz.com/python-programming/json
     with open(basePath + '/presentation_text.json') as f:
         data = json.load(f)
+        logger.info(f"Downloading {len(data)} presentations")
         for element in data:
             logger.debug(element)
             noSlides = len(data[element])
             logger.debug(noSlides)
             createFolder(os.path.join(basePath, 'presentation', element))
+            logger.info("Downloading {noSlides} slides for the presentation")
             for i in range(1, noSlides+1):
+                logger.debug(f"Downloading slide {i}/{noSlides}")
                 downloadURL = baseURL + 'presentation/' + \
                     element + '/slide-' + str(i) + '.png'
                 savePath = os.path.join(basePath, 'presentation',
@@ -84,35 +98,43 @@ def downloadSlides(baseURL, basePath):
                 logger.debug(savePath)
 
                 try:
-                    urllib.request.urlretrieve(
-                        downloadURL, savePath, reporthook=bar.on_urlretrieve if bar else None)
+                    if smartDlEnabled:
+                        smartDl = SmartDL(downloadURL, savePath, progress_bar=False)
+                        smartDl.start()
+                    else:
+                        urllib.request.urlretrieve(
+                            downloadURL, savePath, reporthook=bar.on_urlretrieve if bar else None)
                 except urllib.error.HTTPError as e:
                     # traceback.print_exc()
                     if e.code == 404:
-                        logger.warning("Did not download " + element +
-                                       '/slide-' + str(i) + '.png')
+                        logger.warning(f"Did not download {element}/slide-{str(i)}.png")
                 except Exception:
                     logger.exception("")
 
             createFolder(os.path.join(
                 basePath, 'presentation', element, 'thumbnails'))
+
+            logger.info(f"Downloading {noSlides} thumbnails for the presentation")
             for i in range(1, noSlides+1):
                 downloadURL = baseURL + 'presentation/' + \
                     element + '/thumbnails/thumb-' + str(i) + '.png'
                 savePath = os.path.join(basePath, 'presentation',
                                         element, 'thumbnails', 'thumb-{}.png'.format(i))
 
-                logger.debug(downloadURL)
-                logger.debug(savePath)
+                logger.debug(f"Download url:\t{downloadURL}")
+                logger.debug(f"Download path:\t{savePath}")
 
                 try:
-                    urllib.request.urlretrieve(
-                        downloadURL, savePath, reporthook=bar.on_urlretrieve if bar else None)
+                    if smartDlEnabled:
+                        smartDl = SmartDL(downloadURL, savePath, progress_bar=False)
+                        smartDl.start()
+                    else:
+                        urllib.request.urlretrieve(
+                            downloadURL, savePath, reporthook=bar.on_urlretrieve if bar else None)
                 except urllib.error.HTTPError as e:
                     # traceback.print_exc()
                     if e.code == 404:
-                        logger.warning("Did not download " + element +
-                                       '/thumbnails/thumb-' + str(i) + '.png')
+                        logger.warning(f"Did not download {element}/slide-{str(i)}.png")
                 except Exception:
                     logger.exception("")
 
@@ -159,6 +181,7 @@ if(args.download != None and args.play == args.combine == None):
     meetingNameWanted = None
     if args.name:
         meetingNameWanted = args.name[0]
+        logger.info(f"Naming the meeting as: {meetingNameWanted}")
 
     # get meeting id from url https://regex101.com/r/UjqGeo/3
     matchesURL = re.search(r"/?(\d+\.\d+)/.*?([0-9a-f]{40}-\d{13})/?",
