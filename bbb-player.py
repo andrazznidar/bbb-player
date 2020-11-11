@@ -157,10 +157,8 @@ group.add_argument("-d", "--download", type=str, nargs=1,
                    help="download the BBB conference linked here")
 group.add_argument("-n", "--name", type=str, nargs=1,
                    help="define name of the conference (e.g. meeting1)")
-group.add_argument("-p", "--play", type=str, nargs=1,
-                   help="play a BBB conference saved locally. Full id string \
-                   (e.g. 70i9tyx7zbajoptzbav3ky1tuqxj3hgerup42jda-2177698461148) or \
-                   the name you provided when downloading (e.g. meeting1)")
+group.add_argument("-s", "--server", action="store_true",
+                   help="launch a server with all available downloaded meetings listed on one page")
 group.add_argument("-c", "--combine", type=str, nargs=1,
                    help="combine deskshare+audio of a BBB conference saved localy. Full id string \
                    (e.g. 70i9tyx7zbajoptzbav3ky1tuqxj3hgerup42jda-2177698461148) or \
@@ -174,7 +172,7 @@ if args.verbose:
     LOGGING_LEVEL = logging.DEBUG
     logger.setLevel(LOGGING_LEVEL)
 
-if(args.download != None and args.play == args.combine == None):
+if(args.download != None and args.server == False and args.combine == None):
     logger.info("Download")
     inputURL = args.download[0]
 
@@ -247,12 +245,11 @@ if(args.download != None and args.play == args.combine == None):
             #          check them one by one on success)
             pass
 
-elif(args.play != None and args.name == args.download == args.combine == None):
-    logger.info("Play")
-    fileId = args.play[0]
+elif(args.server == True and args.name == args.download == args.combine == None):
+    logger.info("Server")
 
     try:
-        from flask import Flask, redirect
+        from flask import Flask, render_template
     except:
         logger.error("Flask not imported. Try running:\npip3 install Flask")
         exit(1)
@@ -261,10 +258,10 @@ elif(args.play != None and args.name == args.download == args.combine == None):
     logger.debug(os.getcwd())
 
     try:
-        os.chdir(os.path.join(os.getcwd(), 'downloadedMeetings', fileId))
+        os.chdir(os.path.join(os.getcwd(), DOWNLOADED_MEETINGS_FOLDER))
     except:
-        logger.error(f"Meeting with ID {fileId} is not downloaded. \
-                       Download it first using the --download command")
+        logger.error(f"Meetings folder is not present. \
+                       Download at least one meeting first using the --download argument")
         exit(1)
 
     logger.debug(os.getcwd())
@@ -282,14 +279,23 @@ elif(args.play != None and args.name == args.download == args.combine == None):
                 static_folder=os.getcwd(),
                 template_folder='')
 
-    if(os.path.isfile(os.path.join(os.getcwd(), 'index.html')) and os.path.isfile(os.path.join(os.getcwd(), 'asset-manifest.json'))):
-        @app.route('/')
-        def redirect_1(): return redirect(
-            "http://localhost:5000/index.html", code=307)
-    else:
-        @app.route('/')
-        def redirect_1(): return redirect(
-            "http://localhost:5000/player/playback.html", code=307)
+    @app.route("/")
+    def hello():
+        # list all folders in DOWNLOADED_MEETINGS_FOLDER
+        meetingFolders = sorted([folder for folder in os.listdir(os.getcwd()) if os.path.isdir(os.path.join(os.getcwd(), folder))])
+        if len(meetingFolders) == 0:
+            logger.error(f"Meeting folder ./{DOWNLOADED_MEETINGS_FOLDER} is empty. Download at least one meeting first using the --download argument")
+        meetingLinks = []
+        for m in meetingFolders:
+            # get links to correct html files in folders of downloaded meetings
+            if (os.path.isfile(os.path.join(os.getcwd(), m, 'index.html')) and os.path.isfile(os.path.join(os.getcwd(), m, 'asset-manifest.json'))):
+                # bbb 2.3 has index.html
+                meetingLinks.append([f"./{m}/index.html", m])
+            else:
+                # bbb 2.0 has player/playback.html
+                meetingLinks.append([f"./{m}/player/playback.html", m])
+        # render available meeting links on page
+        return render_template("index.html", meetingLinks=meetingLinks);
 
     # Based on https://stackoverflow.com/a/37331139
     # This is needed for playback of multiple meetings in short succession.
@@ -299,12 +305,12 @@ elif(args.play != None and args.name == args.download == args.combine == None):
     if __name__ == "__main__":
         app.run()
 
-elif(args.combine != None and args.name == args.download == args.play == None):
+elif(args.combine != None and args.name == args.download == None and args.server == False):
     logger.info("Combine")
     fileIdOrName = args.combine[0]
 
     try:
-        os.chdir('./downloadedMeetings/' + fileIdOrName)
+        os.chdir(os.path.join(os.getcwd(), DOWNLOADED_MEETINGS_FOLDER, fileIdOrName))
     except:
         logger.error(f"Meeting with ID {fileIdOrName} is not downloaded. \
                        Download it first using the --download command")
@@ -338,7 +344,7 @@ elif(args.combine != None and args.name == args.download == args.play == None):
 
     logger.info('Your combined video file is located here:')
     logger.info(
-        f'./downloadedMeetings/{fileIdOrName}/{fileName}.{COMBINED_VIDEO_FORMAT}')
+        f'./{DOWNLOADED_MEETINGS_FOLDER}/{fileIdOrName}/{fileName}.{COMBINED_VIDEO_FORMAT}')
 
 else:
     logger.error("Error parsing arguments. Use '--help' for help.")
