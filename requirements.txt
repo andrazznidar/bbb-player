@@ -9,7 +9,7 @@ flask
 ffmpeg-python
 #
 #
-###### Requirements without Version Specifiers, --download only. ######
+###### Requirements without Version Specifiers, used for --download only. ######
 progressist
 pySmartDL
 #

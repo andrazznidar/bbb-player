@@ -9,13 +9,6 @@ import re
 from datetime import timedelta
 import logging
 
-try:
-    from pySmartDL import SmartDL
-    smartDlEnabled = True
-except ImportError:
-    logger.warning("pySmartDL not imported, using urllib instead")
-    smartDlEnabled = False
-
 
 LOGGING_LEVEL = logging.INFO
 # LOGGING_LEVEL = logging.DEBUG
@@ -28,6 +21,13 @@ logging.basicConfig(format="[%(asctime)s -%(levelname)8s]: %(message)s",
                     datefmt="%H:%M:%S",
                     level=LOGGING_LEVEL)
 logger = logging.getLogger('bbb-player')
+
+try:
+    from pySmartDL import SmartDL
+    smartDlEnabled = True
+except ImportError:
+    logger.warning("pySmartDL not imported, using urllib instead")
+    smartDlEnabled = False
 
 
 def ffmpegCombine(suffix, fileName=DEFAULT_COMBINED_VIDEO_NAME):
@@ -86,7 +86,7 @@ def downloadSlides(baseURL, basePath):
             noSlides = len(data[element])
             logger.debug(noSlides)
             createFolder(os.path.join(basePath, 'presentation', element))
-            logger.info("Downloading {noSlides} slides for the presentation")
+            logger.info(f"Downloading {noSlides} slides for the presentation")
             for i in range(1, noSlides+1):
                 logger.debug(f"Downloading slide {i}/{noSlides}")
                 downloadURL = baseURL + 'presentation/' + \
@@ -99,7 +99,8 @@ def downloadSlides(baseURL, basePath):
 
                 try:
                     if smartDlEnabled:
-                        smartDl = SmartDL(downloadURL, savePath, progress_bar=False)
+                        smartDl = SmartDL(
+                            downloadURL, savePath, progress_bar=False)
                         smartDl.start()
                     else:
                         urllib.request.urlretrieve(
@@ -107,14 +108,16 @@ def downloadSlides(baseURL, basePath):
                 except urllib.error.HTTPError as e:
                     # traceback.print_exc()
                     if e.code == 404:
-                        logger.warning(f"Did not download {element}/slide-{str(i)}.png")
+                        logger.warning(
+                            f"Did not download {element}/slide-{str(i)}.png")
                 except Exception:
                     logger.exception("")
 
             createFolder(os.path.join(
                 basePath, 'presentation', element, 'thumbnails'))
 
-            logger.info(f"Downloading {noSlides} thumbnails for the presentation")
+            logger.info(
+                f"Downloading {noSlides} thumbnails for the presentation")
             for i in range(1, noSlides+1):
                 downloadURL = baseURL + 'presentation/' + \
                     element + '/thumbnails/thumb-' + str(i) + '.png'
@@ -126,7 +129,8 @@ def downloadSlides(baseURL, basePath):
 
                 try:
                     if smartDlEnabled:
-                        smartDl = SmartDL(downloadURL, savePath, progress_bar=False)
+                        smartDl = SmartDL(
+                            downloadURL, savePath, progress_bar=False)
                         smartDl.start()
                     else:
                         urllib.request.urlretrieve(
@@ -134,7 +138,8 @@ def downloadSlides(baseURL, basePath):
                 except urllib.error.HTTPError as e:
                     # traceback.print_exc()
                     if e.code == 404:
-                        logger.warning(f"Did not download {element}/slide-{str(i)}.png")
+                        logger.warning(
+                            f"Did not download {element}/slide-{str(i)}.png")
                 except Exception:
                     logger.exception("")
 
