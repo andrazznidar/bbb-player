@@ -173,6 +173,8 @@ group.add_argument("-v", "--verbose", action="store_true",
 
 args = parser.parse_args()
 
+SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
+
 if args.verbose:
     LOGGING_LEVEL = logging.DEBUG
     logger.setLevel(LOGGING_LEVEL)
@@ -183,7 +185,7 @@ if(args.download != None and args.server == False and args.combine == None):
 
     meetingNameWanted = None
     if args.name:
-        meetingNameWanted = args.name[0]
+        meetingNameWanted = args.name[0].strip().replace(" ", "_")
         logger.info(f"Naming the meeting as: {meetingNameWanted}")
 
     # get meeting id from url https://regex101.com/r/UjqGeo/3
@@ -254,7 +256,7 @@ elif(args.server == True and args.name == args.download == args.combine == None)
     logger.info("Server")
 
     try:
-        from flask import Flask, render_template
+        from flask import Flask, render_template, request, redirect, url_for
     except:
         logger.error("Flask not imported. Try running:\npip3 install Flask")
         exit(1)
@@ -284,8 +286,27 @@ elif(args.server == True and args.name == args.download == args.combine == None)
                 static_folder=os.getcwd(),
                 template_folder='')
 
-    @app.route("/")
-    def hello():
+
+    @app.route('/', methods=["POST"])
+    def api_dl_meeting():
+        form = request.form
+        if form["meeting-name"] and form["meeting-url"]:
+            name = form["meeting-name"].strip().replace(" ", "_")
+            url = form["meeting-url"].strip()
+            message=f"Meeting with name {name} added to download queue."
+            
+            # TODO: download meeting and dinamically show progress
+            # https://stackoverflow.com/questions/40963401/flask-dynamic-data-update-without-reload-page/40964086
+
+        else:
+            message=f"Error occured when trying to add a meeting to download queue."
+
+        message += " (NOT YET IMPLEMENTED)"
+        return hello(message=message)
+        
+
+    @app.route("/", methods=["GET"])
+    def hello(message="Add a meeting to download queue:"):
         # list all folders in DOWNLOADED_MEETINGS_FOLDER
         meetingFolders = sorted([folder for folder in os.listdir(os.getcwd()) if os.path.isdir(os.path.join(os.getcwd(), folder))])
         if len(meetingFolders) == 0:
@@ -295,12 +316,12 @@ elif(args.server == True and args.name == args.download == args.combine == None)
             # get links to correct html files in folders of downloaded meetings
             if (os.path.isfile(os.path.join(os.getcwd(), m, 'index.html')) and os.path.isfile(os.path.join(os.getcwd(), m, 'asset-manifest.json'))):
                 # bbb 2.3 has index.html
-                meetingLinks.append([f"./{m}/index.html", m])
+                meetingLinks.append([f"/{m}/index.html", m])
             else:
                 # bbb 2.0 has player/playback.html
-                meetingLinks.append([f"./{m}/player/playback.html", m])
+                meetingLinks.append([f"/{m}/player/playback.html", m])
         # render available meeting links on page
-        return render_template("index.html", meetingLinks=meetingLinks);
+        return render_template("index.html", meetingLinks=meetingLinks, message=message);
 
     # Based on https://stackoverflow.com/a/37331139
     # This is needed for playback of multiple meetings in short succession.
