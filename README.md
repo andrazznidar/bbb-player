@@ -3,6 +3,26 @@
 Download public BigBlueButton recordings and play them offline.
 Playback is to a great extent based on the [BigBlueButton](https://github.com/bigbluebutton) frontend.
 
+Quickstart:
+
+Must haves: Python3.6 or later (preferably with pip installed)
+
+```bash
+# download and create a virtual environment
+git clone git@github.com:andrazznidar/bbb-player.git && cd bbb-player
+python3 -m venv env && source ./env/bin/activate
+pip install -r requirements.txt # to install the requirements
+
+# to download the meetings:
+source ./env/bin/activate
+python bbb-player.py -d https://bbb_recoding_url_string -n name_of_the_meeting
+
+# to serve the meetings
+source ./env/bin/activate
+python bbb-player.py -s
+```
+
+
 ## Usage
 
 1. Download and unzip this repo.
