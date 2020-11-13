@@ -276,6 +276,23 @@ Download at least one meeting first using the --download argument")
     logger.info('Press CTRL+C when done.')
     logger.info('---------')
 
+
+    # check if an older bbb version recording exists and copy 2.3 player to it:
+    meetingFolders = sorted([folder for folder in os.listdir(downloadedMeetingsFolderPath) if os.path.isdir(os.path.join(downloadedMeetingsFolderPath, folder))])
+    for m in meetingFolders:
+        # get links to correct html files in folders of downloaded meetings
+        if (os.path.isfile(os.path.join(downloadedMeetingsFolderPath, m, 'index.html'))
+            and os.path.isfile(os.path.join(downloadedMeetingsFolderPath, m, 'asset-manifest.json'))):
+            # bbb 2.3 has index.html
+            pass
+        else:
+            # bbb 2.0 - copy bbb 2.3 player over it
+            logger.info(f"An older 2.0 bbb player detected in meeting {m}. Copying 2.3 player over it")
+            player23Folder = os.path.join(SCRIPT_DIR, "player23")
+            meetingFolder = os.path.join(downloadedMeetingsFolderPath, m)
+            copy_tree(player23Folder, meetingFolder)
+
+
     # Based on https://stackoverflow.com/a/42791810
     # Flask is needed for HTTP 206 Partial Content support.
     app = Flask(__name__,
