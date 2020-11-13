@@ -5,7 +5,7 @@ Playback is to a great extent based on the [BigBlueButton](https://github.com/bi
 
 ### Quickstart:
 
-Must haves: **Python3.6** or later (with **pip**)
+Must have **Python3.6** or later (with **pip**)
 
 ```bash
 # download and create a virtual environment
@@ -34,7 +34,7 @@ deactivate
 1. Download a recoreded BBB meeting using: `python bbb-player.py --download BBB_HTTPS_URL -n name_of_the_meeting` where **_BBB_HTTPS_URL_** is your meeting url and **_name_of_the_meeting_** is your name for the meeting.
    > Example: `python bbb-player.py --download https://bbb.example.com/playback/presentation/2.0/playback.html?meetingId=70i9tyx7zbajoptzbav3ky1tuqxj3hgerup42jda-2177698461148 -n name_of_the_meeting`
 1. Wait for download to complete.
-1. Serve a signle web page with all the meetings with `python bbb-player.py -s`
+1. Serve a single web page with all the meetings with `python bbb-player.py -s`
 1. Open a modern web browser and play the downloaded meeting on `http://localhost:5000/`.
    ![image](https://user-images.githubusercontent.com/25982642/99105478-e59c6280-25e2-11eb-8537-ee06ad9aff0c.png)
 1. When done press `CTRL+C` to stop the local server. And `deactivate` to exit the virtual env
