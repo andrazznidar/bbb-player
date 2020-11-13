@@ -238,10 +238,6 @@ if(args.download != None and args.server == False and args.combine == None):
         downloadFiles(baseURL, folderPath)
         downloadSlides(baseURL, folderPath)
 
-        # Sunsetting the 2.0 player in favour of 2.3 player
-        # copy_tree(os.path.join(SCRIPT_DIR, "player"),
-        #           os.path.join(folderPath, "player"))
-
         # Copy the 2.3 player
         copy_tree(os.path.join(SCRIPT_DIR, "player23"), folderPath)
 
@@ -262,7 +258,8 @@ elif(args.server == True and args.name == args.download == args.combine == None)
 
     logger.debug("Flask imported.")
 
-    downloadedMeetingsFolderPath = os.path.join(SCRIPT_DIR, DOWNLOADED_MEETINGS_FOLDER)
+    downloadedMeetingsFolderPath = os.path.join(
+        SCRIPT_DIR, DOWNLOADED_MEETINGS_FOLDER)
     if not os.path.isdir(downloadedMeetingsFolderPath):
         logger.error(f"Meetings folder is not present.\
 Download at least one meeting first using the --download argument")
@@ -276,22 +273,22 @@ Download at least one meeting first using the --download argument")
     logger.info('Press CTRL+C when done.')
     logger.info('---------')
 
-
     # check if an older bbb version recording exists and copy 2.3 player to it:
-    meetingFolders = sorted([folder for folder in os.listdir(downloadedMeetingsFolderPath) if os.path.isdir(os.path.join(downloadedMeetingsFolderPath, folder))])
+    meetingFolders = sorted([folder for folder in os.listdir(
+        downloadedMeetingsFolderPath) if os.path.isdir(os.path.join(downloadedMeetingsFolderPath, folder))])
     for m in meetingFolders:
         # get links to correct html files in folders of downloaded meetings
         if (os.path.isfile(os.path.join(downloadedMeetingsFolderPath, m, 'index.html'))
-            and os.path.isfile(os.path.join(downloadedMeetingsFolderPath, m, 'asset-manifest.json'))):
+                and os.path.isfile(os.path.join(downloadedMeetingsFolderPath, m, 'asset-manifest.json'))):
             # bbb 2.3 has index.html
             pass
         else:
             # bbb 2.0 - copy bbb 2.3 player over it
-            logger.info(f"An older 2.0 bbb player detected in meeting {m}. Copying 2.3 player over it")
+            logger.info(
+                f"An older 2.0 bbb player detected in meeting {m}. Copying 2.3 player over it")
             player23Folder = os.path.join(SCRIPT_DIR, "player23")
             meetingFolder = os.path.join(downloadedMeetingsFolderPath, m)
             copy_tree(player23Folder, meetingFolder)
-
 
     # Based on https://stackoverflow.com/a/42791810
     # Flask is needed for HTTP 206 Partial Content support.
@@ -300,43 +297,44 @@ Download at least one meeting first using the --download argument")
                 static_folder=SCRIPT_DIR,
                 template_folder='')
 
-
     @app.route('/', methods=["POST"])
     def api_dl_meeting():
         form = request.form
         if form["meeting-name"] and form["meeting-url"]:
             name = form["meeting-name"].strip().replace(" ", "_")
-            url = form["meeting-url"].strip()
-            message=f"Meeting with name {name} added to download queue."
-            
+            message = f"Meeting with name {name} added to download queue."
+
             # TODO: download meeting and dinamically show progress
             # https://stackoverflow.com/questions/40963401/flask-dynamic-data-update-without-reload-page/40964086
 
         else:
-            message=f"Error occured when trying to add a meeting to download queue."
+            message = f"Error occured when trying to add a meeting to download queue."
 
         message += " (NOT IMPLEMENTED)"
         return hello(message=message)
-        
 
     @app.route("/", methods=["GET"])
     def hello(message="Add a meeting to download queue:"):
         # list all folders in DOWNLOADED_MEETINGS_FOLDER
-        meetingFolders = sorted([folder for folder in os.listdir(downloadedMeetingsFolderPath) if os.path.isdir(os.path.join(downloadedMeetingsFolderPath, folder))])
+        meetingFolders = sorted([folder for folder in os.listdir(
+            downloadedMeetingsFolderPath) if os.path.isdir(os.path.join(downloadedMeetingsFolderPath, folder))])
         if len(meetingFolders) == 0:
-            logger.warning(f"Meeting folder /{DOWNLOADED_MEETINGS_FOLDER} is empty. Download at least one meeting first using the --download argument")
+            logger.warning(
+                f"Meeting folder /{DOWNLOADED_MEETINGS_FOLDER} is empty. Download at least one meeting first using the --download argument")
         meetingLinks = []
         for m in meetingFolders:
             # get links to correct html files in folders of downloaded meetings
             if (os.path.isfile(os.path.join(downloadedMeetingsFolderPath, m, 'index.html')) and os.path.isfile(os.path.join(downloadedMeetingsFolderPath, m, 'asset-manifest.json'))):
                 # bbb 2.3 has index.html
-                meetingLinks.append([f"/{DOWNLOADED_MEETINGS_FOLDER}/{m}/index.html", m])
+                meetingLinks.append(
+                    [f"/{DOWNLOADED_MEETINGS_FOLDER}/{m}/index.html", m])
             else:
                 # bbb 2.0 has player/playback.html
-                meetingLinks.append([f"/{DOWNLOADED_MEETINGS_FOLDER}/{m}/player/playback.html", m])
+                meetingLinks.append(
+                    [f"/{DOWNLOADED_MEETINGS_FOLDER}/{m}/player/playback.html", m])
         # render available meeting links on page
         return render_template("index.html",
-            meetingLinks=meetingLinks, message=message);
+                               meetingLinks=meetingLinks, message=message)
 
     # Based on https://stackoverflow.com/a/37331139
     # This is needed for playback of multiple meetings in short succession.
