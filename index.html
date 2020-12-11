@@ -1,27 +1,39 @@
 <!DOCTYPE html>
+<html lang="en"></html>
 <html>
   <head>
+    <!-- Required meta tags -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
     <title>BBB downloaded meetings</title>
+
+    <!-- Bootstrap CSS -->
+    <link href="./css/bootstrap.min.css" rel="stylesheet" integrity="sha384-giJF6kkoqNQ00vy+HMDP7azOuL0xtbfIcaT9wjKHr8RbDVddVHyTfAAsrekwKmP1" crossorigin="anonymous">
   </head>
   <body>
-    <h1>Downloaded BBB meetings:</h1>
-    <div class="meeting-links">
+    <h1 class="text-center">Downloaded BBB meetings:</h1>
+    <div class="meeting-links container-fluid justify-content-lg-center border border-primary rounded col-lg-8 my-3">
       <ul>
         {% for link, name in meetingLinks %}
         <li><a href={{ link }}>{{ name }}</a></li>
         {% endfor %}
       </ul>
     </div>
-    <div class="dl-new-meeting">
+
+    <div class="dl-new-meeting container-fluid justify-content-lg-center border border-primary rounded col-lg-8">
       <div class="message">
         <span><strong>{{ message }}</strong></span>
       </div>
-      <form action="{{ url_for('api_dl_meeting') }}" method="POST">
+      <!-- <form action="{{ url_for('api_dl_meeting') }}" method="POST">
         <span>Name of the meeting: </span><input type="text" name="meeting-name"><br>
-        <span>Meeting url: </span><input type="text" name="meeting-url"><br>
+        <span>Meeting url: </span><input type="text" name="meeting-url"><br> -->
         <!--<span>Meeting description: </span><input type="text" name="meeting-description"><br>-->
-        <input type="submit">
-      </form>
+        <!-- <input type="submit">
+      </form> -->
     </div>
+
+    <!-- Bootstrap JS -->
+    <script src="./js/bootstrap.bundle.min.js" integrity="sha384-ygbV9kiqUc6oa4msXn9868pTtWMgiQaeYH7/t7LECLbyPA2x65Kgf80OJFdroafW" crossorigin="anonymous"></script>
   </body>
 </html>

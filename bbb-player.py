@@ -314,7 +314,7 @@ Download at least one meeting first using the --download argument")
         return hello(message=message)
 
     @app.route("/", methods=["GET"])
-    def hello(message="Add a meeting to download queue:"):
+    def hello(message='You can download new meetings from the command line. Run "python3 bbb-player.py --help" for help.'):
         # list all folders in DOWNLOADED_MEETINGS_FOLDER
         meetingFolders = sorted([folder for folder in os.listdir(
             downloadedMeetingsFolderPath) if os.path.isdir(os.path.join(downloadedMeetingsFolderPath, folder))])
