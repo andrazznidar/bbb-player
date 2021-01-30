@@ -253,17 +253,17 @@ if __name__ == "__main__":
     # group = parser.add_mutually_exclusive_group()
     group = parser
     group.add_argument("-d", "--download", type=str, nargs=1,
-                    help="download the BBB conference linked here")
+                       help="download the BBB conference linked here")
     group.add_argument("-n", "--name", type=str, nargs=1,
-                    help="define name of the conference (e.g. meeting1)")
+                       help="define name of the conference (e.g. meeting1)")
     group.add_argument("-s", "--server", action="store_true",
-                    help="launch a server with all available downloaded meetings listed on one page")
+                       help="launch a server with all available downloaded meetings listed on one page")
     group.add_argument("-c", "--combine", type=str, nargs=1,
-                    help="combine deskshare+audio of a BBB conference saved localy. Full id string \
+                       help="combine deskshare+audio of a BBB conference saved localy. Full id string \
                     (e.g. 70i9tyx7zbajoptzbav3ky1tuqxj3hgerup42jda-2177698461148) or \
                     the name you provided when downloading (e.g. meeting1)")
     group.add_argument("-v", "--verbose", action="store_true",
-                    help="verbose logging")
+                       help="verbose logging")
 
     args = parser.parse_args()
 
@@ -282,8 +282,8 @@ if __name__ == "__main__":
 
         # get meeting id from url https://regex101.com/r/UjqGeo/3
         matchesURL = re.search(r"/?(\d+\.\d+)/.*?([0-9a-f]{40}-\d{13})/?",
-                            inputURL,
-                            re.IGNORECASE)
+                               inputURL,
+                               re.IGNORECASE)
         if matchesURL and len(matchesURL.groups()) == 2:
             bbbVersion = matchesURL.group(1)
             meetingId = matchesURL.group(2)
@@ -322,7 +322,7 @@ if __name__ == "__main__":
             try:
                 from progressist import ProgressBar
                 bar = ProgressBar(throttle=timedelta(seconds=1),
-                                template="Download |{animation}|{tta}| {done:B}/{total:B} at {speed:B}/s")
+                                  template="Download |{animation}|{tta}| {done:B}/{total:B} at {speed:B}/s")
             except:
                 logger.warning("progressist not imported. Progress bar will not be shown. Try running: \
                                 pip3 install progressist")
@@ -342,13 +342,13 @@ if __name__ == "__main__":
 
     elif(args.server == True and args.name == args.download == args.combine == None):
         app = create_app()
-        
+
         logger.info('---------')
         logger.info('In your modern web browser open:')
         logger.info('http://localhost:5000')
         logger.info('Press CTRL+C when done.')
         logger.info('---------')
-        
+
         app.run(host='0.0.0.0', port=5000)
 
     elif(args.combine != None and args.name == args.download == None and args.server == False):
@@ -356,7 +356,8 @@ if __name__ == "__main__":
         fileIdOrName = args.combine[0]
 
         try:
-            os.chdir(os.path.join(SCRIPT_DIR, DOWNLOADED_MEETINGS_FOLDER, fileIdOrName))
+            os.chdir(os.path.join(
+                SCRIPT_DIR, DOWNLOADED_MEETINGS_FOLDER, fileIdOrName))
         except:
             logger.error(f"Meeting with ID {fileIdOrName} is not downloaded. \
                         Download it first using the --download command")
@@ -367,7 +368,8 @@ if __name__ == "__main__":
         if matchesName:
             # if file id/name looks like bbb 54 char string use a simple predefined name
             meetingId = matchesName.group(0)
-            logger.info(f"Extracted meeting id: {meetingId} from provided name")
+            logger.info(
+                f"Extracted meeting id: {meetingId} from provided name")
             logger.info(
                 f"Setting output file name to {DEFAULT_COMBINED_VIDEO_NAME}")
             fileName = DEFAULT_COMBINED_VIDEO_NAME
