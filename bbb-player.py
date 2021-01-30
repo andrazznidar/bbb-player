@@ -155,99 +155,7 @@ def createFolder(path):
         logger.debug("Successfully created the directory %s " % path)
 
 
-# Parse the command line arguments
-parser = argparse.ArgumentParser()
-# group = parser.add_mutually_exclusive_group()
-group = parser
-group.add_argument("-d", "--download", type=str, nargs=1,
-                   help="download the BBB conference linked here")
-group.add_argument("-n", "--name", type=str, nargs=1,
-                   help="define name of the conference (e.g. meeting1)")
-group.add_argument("-s", "--server", action="store_true",
-                   help="launch a server with all available downloaded meetings listed on one page")
-group.add_argument("-c", "--combine", type=str, nargs=1,
-                   help="combine deskshare+audio of a BBB conference saved localy. Full id string \
-                   (e.g. 70i9tyx7zbajoptzbav3ky1tuqxj3hgerup42jda-2177698461148) or \
-                   the name you provided when downloading (e.g. meeting1)")
-group.add_argument("-v", "--verbose", action="store_true",
-                   help="verbose logging")
-
-args = parser.parse_args()
-
-if args.verbose:
-    LOGGING_LEVEL = logging.DEBUG
-    logger.setLevel(LOGGING_LEVEL)
-
-if(args.download != None and args.server == False and args.combine == None):
-    logger.info("Download")
-    inputURL = args.download[0]
-
-    meetingNameWanted = None
-    if args.name:
-        meetingNameWanted = args.name[0].strip().replace(" ", "_")
-        logger.info(f"Naming the meeting as: {meetingNameWanted}")
-
-    # get meeting id from url https://regex101.com/r/UjqGeo/3
-    matchesURL = re.search(r"/?(\d+\.\d+)/.*?([0-9a-f]{40}-\d{13})/?",
-                           inputURL,
-                           re.IGNORECASE)
-    if matchesURL and len(matchesURL.groups()) == 2:
-        bbbVersion = matchesURL.group(1)
-        meetingId = matchesURL.group(2)
-        logger.info(f"Detected bbb version:\t{bbbVersion}")
-        logger.info(f"Detected meeting id:\t{meetingId}")
-    else:
-        logger.error("Meeting ID could not be found in the url.")
-        exit(1)
-
-    baseURL = "{}://{}/presentation/{}/".format(urlparse(inputURL).scheme,
-                                                urlparse(inputURL).netloc,
-                                                meetingId)
-    logger.debug("Base url: {}".format(baseURL))
-
-    if meetingNameWanted:
-        folderPath = os.path.join(
-            SCRIPT_DIR, DOWNLOADED_MEETINGS_FOLDER, meetingNameWanted)
-    else:
-        folderPath = os.path.join(
-            SCRIPT_DIR, DOWNLOADED_MEETINGS_FOLDER, meetingId)
-    logger.debug("Folder path: {}".format(folderPath))
-
-    if os.path.isfile(os.path.join(folderPath, DOWNLOADED_FULLY_FILENAME)):
-        logger.info("Meeting is already downloaded.")
-    else:
-        logger.info(
-            "Folder already created but not everything was downloaded. Retrying.")
-        # todo: maybe delete contents of the folder
-
-        foldersToCreate = [os.path.join(folderPath, x) for x in [
-            "", "video", "deskshare", "presentation"]]
-        # logger.info(foldersToCreate)
-        for i in foldersToCreate:
-            createFolder(i)
-
-        try:
-            from progressist import ProgressBar
-            bar = ProgressBar(throttle=timedelta(seconds=1),
-                              template="Download |{animation}|{tta}| {done:B}/{total:B} at {speed:B}/s")
-        except:
-            logger.warning("progressist not imported. Progress bar will not be shown. Try running: \
-                            pip3 install progressist")
-            bar = None
-
-        downloadFiles(baseURL, folderPath)
-        downloadSlides(baseURL, folderPath)
-
-        # Copy the 2.3 player
-        copy_tree(os.path.join(SCRIPT_DIR, "player23"), folderPath)
-
-        with open(os.path.join(folderPath, DOWNLOADED_FULLY_FILENAME), 'w') as fp:
-            # write a downloaded_fully file to mark a successful download
-            # todo: check if files were really dl-ed (make a json of files to download and
-            #          check them one by one on success)
-            pass
-
-elif(args.server == True and args.name == args.download == args.combine == None):
+def create_app():
     logger.info("Server")
 
     try:
@@ -266,12 +174,6 @@ Download at least one meeting first using the --download argument")
         exit(1)
 
     logger.debug(f"Current path: {os.getcwd()}")
-
-    logger.info('---------')
-    logger.info('In your modern web browser open:')
-    logger.info('http://localhost:5000')
-    logger.info('Press CTRL+C when done.')
-    logger.info('---------')
 
     # check if an older bbb version recording exists and copy 2.3 player to it:
     meetingFolders = sorted([folder for folder in os.listdir(
@@ -341,49 +243,156 @@ Download at least one meeting first using the --download argument")
     app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
     app.config['TESTING'] = True
 
-    if __name__ == "__main__":
+    return app
+
+
+if __name__ == "__main__":
+
+    # Parse the command line arguments
+    parser = argparse.ArgumentParser()
+    # group = parser.add_mutually_exclusive_group()
+    group = parser
+    group.add_argument("-d", "--download", type=str, nargs=1,
+                       help="download the BBB conference linked here")
+    group.add_argument("-n", "--name", type=str, nargs=1,
+                       help="define name of the conference (e.g. meeting1)")
+    group.add_argument("-s", "--server", action="store_true",
+                       help="launch a server with all available downloaded meetings listed on one page")
+    group.add_argument("-c", "--combine", type=str, nargs=1,
+                       help="combine deskshare+audio of a BBB conference saved localy. Full id string \
+                    (e.g. 70i9tyx7zbajoptzbav3ky1tuqxj3hgerup42jda-2177698461148) or \
+                    the name you provided when downloading (e.g. meeting1)")
+    group.add_argument("-v", "--verbose", action="store_true",
+                       help="verbose logging")
+
+    args = parser.parse_args()
+
+    if args.verbose:
+        LOGGING_LEVEL = logging.DEBUG
+        logger.setLevel(LOGGING_LEVEL)
+
+    if(args.download != None and args.server == False and args.combine == None):
+        logger.info("Download")
+        inputURL = args.download[0]
+
+        meetingNameWanted = None
+        if args.name:
+            meetingNameWanted = args.name[0].strip().replace(" ", "_")
+            logger.info(f"Naming the meeting as: {meetingNameWanted}")
+
+        # get meeting id from url https://regex101.com/r/UjqGeo/3
+        matchesURL = re.search(r"/?(\d+\.\d+)/.*?([0-9a-f]{40}-\d{13})/?",
+                               inputURL,
+                               re.IGNORECASE)
+        if matchesURL and len(matchesURL.groups()) == 2:
+            bbbVersion = matchesURL.group(1)
+            meetingId = matchesURL.group(2)
+            logger.info(f"Detected bbb version:\t{bbbVersion}")
+            logger.info(f"Detected meeting id:\t{meetingId}")
+        else:
+            logger.error("Meeting ID could not be found in the url.")
+            exit(1)
+
+        baseURL = "{}://{}/presentation/{}/".format(urlparse(inputURL).scheme,
+                                                    urlparse(inputURL).netloc,
+                                                    meetingId)
+        logger.debug("Base url: {}".format(baseURL))
+
+        if meetingNameWanted:
+            folderPath = os.path.join(
+                SCRIPT_DIR, DOWNLOADED_MEETINGS_FOLDER, meetingNameWanted)
+        else:
+            folderPath = os.path.join(
+                SCRIPT_DIR, DOWNLOADED_MEETINGS_FOLDER, meetingId)
+        logger.debug("Folder path: {}".format(folderPath))
+
+        if os.path.isfile(os.path.join(folderPath, DOWNLOADED_FULLY_FILENAME)):
+            logger.info("Meeting is already downloaded.")
+        else:
+            logger.info(
+                "Folder already created but not everything was downloaded. Retrying.")
+            # todo: maybe delete contents of the folder
+
+            foldersToCreate = [os.path.join(folderPath, x) for x in [
+                "", "video", "deskshare", "presentation"]]
+            # logger.info(foldersToCreate)
+            for i in foldersToCreate:
+                createFolder(i)
+
+            try:
+                from progressist import ProgressBar
+                bar = ProgressBar(throttle=timedelta(seconds=1),
+                                  template="Download |{animation}|{tta}| {done:B}/{total:B} at {speed:B}/s")
+            except:
+                logger.warning("progressist not imported. Progress bar will not be shown. Try running: \
+                                pip3 install progressist")
+                bar = None
+
+            downloadFiles(baseURL, folderPath)
+            downloadSlides(baseURL, folderPath)
+
+            # Copy the 2.3 player
+            copy_tree(os.path.join(SCRIPT_DIR, "player23"), folderPath)
+
+            with open(os.path.join(folderPath, DOWNLOADED_FULLY_FILENAME), 'w') as fp:
+                # write a downloaded_fully file to mark a successful download
+                # todo: check if files were really dl-ed (make a json of files to download and
+                #          check them one by one on success)
+                pass
+
+    elif(args.server == True and args.name == args.download == args.combine == None):
+        app = create_app()
+
+        logger.info('---------')
+        logger.info('In your modern web browser open:')
+        logger.info('http://localhost:5000')
+        logger.info('Press CTRL+C when done.')
+        logger.info('---------')
+
         app.run(host='0.0.0.0', port=5000)
 
-elif(args.combine != None and args.name == args.download == None and args.server == False):
-    logger.info("Combine")
-    fileIdOrName = args.combine[0]
+    elif(args.combine != None and args.name == args.download == None and args.server == False):
+        logger.info("Combine")
+        fileIdOrName = args.combine[0]
 
-    try:
-        os.chdir(os.path.join(SCRIPT_DIR, DOWNLOADED_MEETINGS_FOLDER, fileIdOrName))
-    except:
-        logger.error(f"Meeting with ID {fileIdOrName} is not downloaded. \
-                       Download it first using the --download command")
-        exit(1)
+        try:
+            os.chdir(os.path.join(
+                SCRIPT_DIR, DOWNLOADED_MEETINGS_FOLDER, fileIdOrName))
+        except:
+            logger.error(f"Meeting with ID {fileIdOrName} is not downloaded. \
+                        Download it first using the --download command")
+            exit(1)
 
-    matchesName = re.match(
-        r"([0-9a-f]{40}-\d{13})", fileIdOrName, re.IGNORECASE)
-    if matchesName:
-        # if file id/name looks like bbb 54 char string use a simple predefined name
-        meetingId = matchesName.group(0)
-        logger.info(f"Extracted meeting id: {meetingId} from provided name")
+        matchesName = re.match(
+            r"([0-9a-f]{40}-\d{13})", fileIdOrName, re.IGNORECASE)
+        if matchesName:
+            # if file id/name looks like bbb 54 char string use a simple predefined name
+            meetingId = matchesName.group(0)
+            logger.info(
+                f"Extracted meeting id: {meetingId} from provided name")
+            logger.info(
+                f"Setting output file name to {DEFAULT_COMBINED_VIDEO_NAME}")
+            fileName = DEFAULT_COMBINED_VIDEO_NAME
+        else:
+            fileName = fileIdOrName
+            # todo: add name parsing from -n
+
+        if(os.path.isfile(f'./{fileName}.{COMBINED_VIDEO_FORMAT}')):
+            logger.warning(
+                f'./{DEFAULT_COMBINED_VIDEO_NAME}.{COMBINED_VIDEO_FORMAT} already found. Aborting.')
+            exit(1)
+        elif(os.path.isfile('./deskshare/deskshare.webm') and os.path.isfile('./video/webcams.webm')):
+            ffmpegCombine('webm', fileName=fileName)
+        elif(os.path.isfile('./deskshare/deskshare.mp4') and os.path.isfile('./video/webcams.mp4')):
+            ffmpegCombine('mp4', fileName=fileName)
+        else:
+            logger.error(
+                'Video files not found, this meeting might not be supported.')
+            exit(1)
+
+        logger.info('Your combined video file is located here:')
         logger.info(
-            f"Setting output file name to {DEFAULT_COMBINED_VIDEO_NAME}")
-        fileName = DEFAULT_COMBINED_VIDEO_NAME
+            f'./{DOWNLOADED_MEETINGS_FOLDER}/{fileIdOrName}/{fileName}.{COMBINED_VIDEO_FORMAT}')
+
     else:
-        fileName = fileIdOrName
-        # todo: add name parsing from -n
-
-    if(os.path.isfile(f'./{fileName}.{COMBINED_VIDEO_FORMAT}')):
-        logger.warning(
-            f'./{DEFAULT_COMBINED_VIDEO_NAME}.{COMBINED_VIDEO_FORMAT} already found. Aborting.')
-        exit(1)
-    elif(os.path.isfile('./deskshare/deskshare.webm') and os.path.isfile('./video/webcams.webm')):
-        ffmpegCombine('webm', fileName=fileName)
-    elif(os.path.isfile('./deskshare/deskshare.mp4') and os.path.isfile('./video/webcams.mp4')):
-        ffmpegCombine('mp4', fileName=fileName)
-    else:
-        logger.error(
-            'Video files not found, this meeting might not be supported.')
-        exit(1)
-
-    logger.info('Your combined video file is located here:')
-    logger.info(
-        f'./{DOWNLOADED_MEETINGS_FOLDER}/{fileIdOrName}/{fileName}.{COMBINED_VIDEO_FORMAT}')
-
-else:
-    logger.error("Error parsing arguments. Use '--help' for help.")
+        logger.error("Error parsing arguments. Use '--help' for help.")
