@@ -79,7 +79,7 @@ def downloadFiles(baseURL, basePath):
 
 def downloadSlides(baseURL, basePath):
     # Part of this is based on https://www.programiz.com/python-programming/json
-    with open(basePath + '/presentation_text.json') as f:
+    with open(basePath + '/presentation_text.json', encoding="utf8") as f:
         data = json.load(f)
         logger.info(f"Downloading {len(data)} presentations")
         for element in data:
