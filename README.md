@@ -1,7 +1,7 @@
 # bbb-player
 
 Download public BigBlueButton recordings and play them offline.
-Playback is to a great extent based on the [BigBlueButton](https://github.com/bigbluebutton) frontend.
+Playback is to a great extent based on the BigBlueButton frontend called [bbb-playback](https://github.com/bigbluebutton/bbb-playback).
 
 ### Quickstart:
 
@@ -28,7 +28,7 @@ deactivate
 ## Detailed usage
 
 1. Download and unzip this repo.
-1. Change working directory to this repo.
+1. Change working directory of your system console to this repo.
 1. Optionally create a virtual environment: `python3 -m venv env` and activate it: `source ./env/bin/activate`
 1. Install `requrements.txt` using: `pip install -r requirements.txt`
 1. Download a recoreded BBB meeting using: `python bbb-player.py --download BBB_HTTPS_URL -n name_of_the_meeting` where **_BBB_HTTPS_URL_** is your meeting url and **_name_of_the_meeting_** is your name for the meeting.
@@ -37,7 +37,7 @@ deactivate
 1. Serve a single web page with all the meetings with `python bbb-player.py -s`
 1. Open a modern web browser and play the downloaded meeting on `http://localhost:5000/`.
    ![image](https://user-images.githubusercontent.com/25982642/99105478-e59c6280-25e2-11eb-8537-ee06ad9aff0c.png)
-1. When done press `CTRL+C` to stop the local server. And `deactivate` to exit the virtual env
+1. When done press `CTRL+C` in the system console to stop the local server. And `deactivate` to exit the virtual env
 
 ## Combining
 
@@ -47,5 +47,5 @@ If the downloaded BBB meeting was only using voice/webcam and video deskshare, y
 2. Start the combining process using `python3 bbb-player.py --combine meetingID` where meetingID is your meetingID from the URL and is equal to a name of a folder inside of `./downloadedMeetings`.
    > Example: `python3 bbb-player.py --combine 70i9tyx7zbajoptzbav3ky1tuqxj3hgerup42jda-2177698461148`
 3. Wait for the process to complete.
-4. Your combined video file is located in the specific meeting folder `./downloadedMeetings/meetingID/combine-output.mkv`. You can use this file as any other normal video file.
-   > Example: `./downloadedMeetings/70i9tyx7zbajoptzbav3ky1tuqxj3hgerup42jda-2177698461148/combine-output.mkv`
+4. Your combined video file is located in the specific meeting folder `./downloadedMeetings/meetingID/meetingID.mkv`. You can use this file as any other normal video file.
+   > Example: `./downloadedMeetings/70i9tyx7zbajoptzbav3ky1tuqxj3hgerup42jda-2177698461148/70i9tyx7zbajoptzbav3ky1tuqxj3hgerup42jda-2177698461148.mkv`
