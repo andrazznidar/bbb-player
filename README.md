@@ -49,3 +49,8 @@ If the downloaded BBB meeting was only using voice/webcam and video deskshare, y
 3. Wait for the process to complete.
 4. Your combined video file is located in the specific meeting folder `./downloadedMeetings/meetingID/meetingID.mkv`. You can use this file as any other normal video file.
    > Example: `./downloadedMeetings/70i9tyx7zbajoptzbav3ky1tuqxj3hgerup42jda-2177698461148/70i9tyx7zbajoptzbav3ky1tuqxj3hgerup42jda-2177698461148.mkv`
+
+## Docker
+
+This project can be run in Docker.
+`docker run -p 5000:5000 -v /path/to/your/folder/myBBBmeetings:/app/downloadedMeetings andrazznidar/bbb-player`
