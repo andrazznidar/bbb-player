@@ -204,7 +204,11 @@ Download at least one meeting first using the --download argument")
         form = request.form
         if form["meeting-name"] and form["meeting-url"]:
             name = form["meeting-name"].strip().replace(" ", "_")
-            message = f"Meeting with name {name} added to download queue."
+            url = form["meeting-url"].strip()
+
+            downloadScript(url, name)
+
+            message = f"Download of {name} with URL {url} completed or failed. ¯\_(ツ)_/¯, check the list meetings and try to play it."
 
             # TODO: download meeting and dinamically show progress
             # https://stackoverflow.com/questions/40963401/flask-dynamic-data-update-without-reload-page/40964086
@@ -212,11 +216,11 @@ Download at least one meeting first using the --download argument")
         else:
             message = f"Error occured when trying to add a meeting to download queue."
 
-        message += " (NOT IMPLEMENTED)"
+        #message += " (NOT IMPLEMENTED)"
         return hello(message=message)
 
     @app.route("/", methods=["GET"])
-    def hello(message='You can download new meetings from the command line. Run "python3 bbb-player.py --help" for help.'):
+    def hello(message='You should download new meetings from the command line. Run "python3 bbb-player.py --help" for help. You can try this form if you are feeling adventurous.'):
         # list all folders in DOWNLOADED_MEETINGS_FOLDER
         meetingFolders = sorted([folder for folder in os.listdir(
             downloadedMeetingsFolderPath) if os.path.isdir(os.path.join(downloadedMeetingsFolderPath, folder))])
@@ -244,6 +248,68 @@ Download at least one meeting first using the --download argument")
     app.config['TESTING'] = True
 
     return app
+
+
+def downloadScript(inputURL, meetingNameWanted):
+    # get meeting id from url https://regex101.com/r/UjqGeo/3
+    matchesURL = re.search(r"/?(\d+\.\d+)/.*?([0-9a-f]{40}-\d{13})/?",
+                           inputURL,
+                           re.IGNORECASE)
+    if matchesURL and len(matchesURL.groups()) == 2:
+        bbbVersion = matchesURL.group(1)
+        meetingId = matchesURL.group(2)
+        logger.info(f"Detected bbb version:\t{bbbVersion}")
+        logger.info(f"Detected meeting id:\t{meetingId}")
+    else:
+        logger.error("Meeting ID could not be found in the url.")
+        exit(1)
+
+    baseURL = "{}://{}/presentation/{}/".format(urlparse(inputURL).scheme,
+                                                urlparse(inputURL).netloc,
+                                                meetingId)
+    logger.debug("Base url: {}".format(baseURL))
+
+    if meetingNameWanted:
+        folderPath = os.path.join(
+            SCRIPT_DIR, DOWNLOADED_MEETINGS_FOLDER, meetingNameWanted)
+    else:
+        folderPath = os.path.join(
+            SCRIPT_DIR, DOWNLOADED_MEETINGS_FOLDER, meetingId)
+    logger.debug("Folder path: {}".format(folderPath))
+
+    if os.path.isfile(os.path.join(folderPath, DOWNLOADED_FULLY_FILENAME)):
+        logger.info("Meeting is already downloaded.")
+    else:
+        logger.info(
+            "Folder already created but not everything was downloaded. Retrying.")
+        # todo: maybe delete contents of the folder
+
+        foldersToCreate = [os.path.join(folderPath, x) for x in [
+            "", "video", "deskshare", "presentation"]]
+        # logger.info(foldersToCreate)
+        for i in foldersToCreate:
+            createFolder(i)
+
+        try:
+            from progressist import ProgressBar
+            bar = ProgressBar(throttle=timedelta(seconds=1),
+                              template="Download |{animation}|{tta}| {done:B}/{total:B} at {speed:B}/s")
+        except:
+            logger.warning("progressist not imported. Progress bar will not be shown. Try running: \
+                                pip3 install progressist")
+            bar = None
+
+        downloadFiles(baseURL, folderPath)
+        downloadSlides(baseURL, folderPath)
+
+        # Copy the 2.3 player
+        copy_tree(os.path.join(SCRIPT_DIR, "player23"), folderPath)
+
+        with open(os.path.join(folderPath, DOWNLOADED_FULLY_FILENAME), 'w') as fp:
+            # write a downloaded_fully file to mark a successful download
+            # todo: check if files were really dl-ed (make a json of files to download and
+            #          check them one by one on success)
+            pass
 
 
 if __name__ == "__main__":
@@ -280,65 +346,7 @@ if __name__ == "__main__":
             meetingNameWanted = args.name[0].strip().replace(" ", "_")
             logger.info(f"Naming the meeting as: {meetingNameWanted}")
 
-        # get meeting id from url https://regex101.com/r/UjqGeo/3
-        matchesURL = re.search(r"/?(\d+\.\d+)/.*?([0-9a-f]{40}-\d{13})/?",
-                               inputURL,
-                               re.IGNORECASE)
-        if matchesURL and len(matchesURL.groups()) == 2:
-            bbbVersion = matchesURL.group(1)
-            meetingId = matchesURL.group(2)
-            logger.info(f"Detected bbb version:\t{bbbVersion}")
-            logger.info(f"Detected meeting id:\t{meetingId}")
-        else:
-            logger.error("Meeting ID could not be found in the url.")
-            exit(1)
-
-        baseURL = "{}://{}/presentation/{}/".format(urlparse(inputURL).scheme,
-                                                    urlparse(inputURL).netloc,
-                                                    meetingId)
-        logger.debug("Base url: {}".format(baseURL))
-
-        if meetingNameWanted:
-            folderPath = os.path.join(
-                SCRIPT_DIR, DOWNLOADED_MEETINGS_FOLDER, meetingNameWanted)
-        else:
-            folderPath = os.path.join(
-                SCRIPT_DIR, DOWNLOADED_MEETINGS_FOLDER, meetingId)
-        logger.debug("Folder path: {}".format(folderPath))
-
-        if os.path.isfile(os.path.join(folderPath, DOWNLOADED_FULLY_FILENAME)):
-            logger.info("Meeting is already downloaded.")
-        else:
-            logger.info(
-                "Folder already created but not everything was downloaded. Retrying.")
-            # todo: maybe delete contents of the folder
-
-            foldersToCreate = [os.path.join(folderPath, x) for x in [
-                "", "video", "deskshare", "presentation"]]
-            # logger.info(foldersToCreate)
-            for i in foldersToCreate:
-                createFolder(i)
-
-            try:
-                from progressist import ProgressBar
-                bar = ProgressBar(throttle=timedelta(seconds=1),
-                                  template="Download |{animation}|{tta}| {done:B}/{total:B} at {speed:B}/s")
-            except:
-                logger.warning("progressist not imported. Progress bar will not be shown. Try running: \
-                                pip3 install progressist")
-                bar = None
-
-            downloadFiles(baseURL, folderPath)
-            downloadSlides(baseURL, folderPath)
-
-            # Copy the 2.3 player
-            copy_tree(os.path.join(SCRIPT_DIR, "player23"), folderPath)
-
-            with open(os.path.join(folderPath, DOWNLOADED_FULLY_FILENAME), 'w') as fp:
-                # write a downloaded_fully file to mark a successful download
-                # todo: check if files were really dl-ed (make a json of files to download and
-                #          check them one by one on success)
-                pass
+        downloadScript(inputURL, meetingNameWanted)
 
     elif(args.server == True and args.name == args.download == args.combine == None):
         app = create_app()
