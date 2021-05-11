@@ -9,7 +9,6 @@ import re
 from datetime import timedelta
 import logging
 
-
 LOGGING_LEVEL = logging.INFO
 # LOGGING_LEVEL = logging.DEBUG
 DOWNLOADED_FULLY_FILENAME = "rec_fully_downloaded.txt"
@@ -23,12 +22,21 @@ logging.basicConfig(format="[%(asctime)s -%(levelname)8s]: %(message)s",
                     level=LOGGING_LEVEL)
 logger = logging.getLogger('bbb-player')
 
+# try to import pySmartDL else use plain old urllib
 try:
     from pySmartDL import SmartDL
     smartDlEnabled = True
 except ImportError:
     logger.warning("pySmartDL not imported, using urllib instead")
     smartDlEnabled = False
+    try:
+        from progressist import ProgressBar
+        bar = ProgressBar(throttle=timedelta(seconds=1),
+                          template="Download |{animation}|{tta}| {done:B}/{total:B} at {speed:B}/s")
+    except:
+        logger.warning("progressist not imported. Progress bar will not be shown. Try running: \
+                            pip3 install progressist")
+        bar = None
 
 
 def ffmpegCombine(suffix, fileName=DEFAULT_COMBINED_VIDEO_NAME):
@@ -64,7 +72,7 @@ def downloadFiles(baseURL, basePath):
 
         try:
             if smartDlEnabled:
-                smartDl = SmartDL(downloadURL, savePath)
+                smartDl = SmartDL(downloadURL, savePath, verify=checkCertificate)
                 smartDl.start()
             else:
                 urllib.request.urlretrieve(
@@ -101,7 +109,7 @@ def downloadSlides(baseURL, basePath):
                 try:
                     if smartDlEnabled:
                         smartDl = SmartDL(
-                            downloadURL, savePath, progress_bar=False)
+                            downloadURL, savePath, progress_bar=False, verify=checkCertificate)
                         smartDl.start()
                     else:
                         urllib.request.urlretrieve(
@@ -131,7 +139,7 @@ def downloadSlides(baseURL, basePath):
                 try:
                     if smartDlEnabled:
                         smartDl = SmartDL(
-                            downloadURL, savePath, progress_bar=False)
+                            downloadURL, savePath, progress_bar=False, verify=checkCertificate)
                         smartDl.start()
                     else:
                         urllib.request.urlretrieve(
@@ -290,15 +298,6 @@ def downloadScript(inputURL, meetingNameWanted):
         for i in foldersToCreate:
             createFolder(i)
 
-        try:
-            from progressist import ProgressBar
-            bar = ProgressBar(throttle=timedelta(seconds=1),
-                              template="Download |{animation}|{tta}| {done:B}/{total:B} at {speed:B}/s")
-        except:
-            logger.warning("progressist not imported. Progress bar will not be shown. Try running: \
-                                pip3 install progressist")
-            bar = None
-
         downloadFiles(baseURL, folderPath)
         downloadSlides(baseURL, folderPath)
 
@@ -330,8 +329,19 @@ if __name__ == "__main__":
                     the name you provided when downloading (e.g. meeting1)")
     group.add_argument("-v", "--verbose", action="store_true",
                        help="verbose logging")
-
+    group.add_argument("--no-check-certificate", action="store_true",
+                       help="Don't check the server certificate against the available \
+                       certificate authorities.")
     args = parser.parse_args()
+
+    checkCertificate = True
+    if (args.no_check_certificate):
+        checkCertificate = False
+        logger.info("Setting option to not check the certificates.")
+        if smartDlEnabled == False:
+            # turn off certificate checking for urllib
+            import ssl
+            ssl._create_default_https_context = ssl._create_unverified_context
 
     if args.verbose:
         LOGGING_LEVEL = logging.DEBUG
