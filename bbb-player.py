@@ -64,7 +64,7 @@ def downloadFiles(baseURL, basePath):
 
         try:
             if smartDlEnabled:
-                smartDl = SmartDL(downloadURL, savePath)
+                smartDl = SmartDL(downloadURL, savePath, verify=False)
                 smartDl.start()
             else:
                 urllib.request.urlretrieve(
@@ -101,7 +101,7 @@ def downloadSlides(baseURL, basePath):
                 try:
                     if smartDlEnabled:
                         smartDl = SmartDL(
-                            downloadURL, savePath, progress_bar=False)
+                            downloadURL, savePath, progress_bar=False, verify=False)
                         smartDl.start()
                     else:
                         urllib.request.urlretrieve(
@@ -131,7 +131,7 @@ def downloadSlides(baseURL, basePath):
                 try:
                     if smartDlEnabled:
                         smartDl = SmartDL(
-                            downloadURL, savePath, progress_bar=False)
+                            downloadURL, savePath, progress_bar=False, verify=False)
                         smartDl.start()
                     else:
                         urllib.request.urlretrieve(
