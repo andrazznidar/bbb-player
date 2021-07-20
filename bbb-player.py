@@ -297,7 +297,7 @@ Download at least one meeting first using the --download argument")
 
 def downloadScript(inputURL, meetingNameWanted):
     bbbInfo = {}
-    bbbInfo["CURRENT_BBBINFO_VERSION"] = CURRENT_BBBINFO_VERSION
+    bbbInfo["BBBINFO_VERSION"] = CURRENT_BBBINFO_VERSION
     bbbInfo["allDone"] = False
     bbbInfo["inputURL"] = inputURL
     bbbInfo["meetingNameWanted"] = meetingNameWanted
