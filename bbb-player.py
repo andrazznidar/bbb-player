@@ -8,6 +8,7 @@ import traceback
 import re
 from datetime import timedelta
 import logging
+import time
 
 LOGGING_LEVEL = logging.INFO
 # LOGGING_LEVEL = logging.DEBUG
@@ -15,6 +16,9 @@ DOWNLOADED_FULLY_FILENAME = "rec_fully_downloaded.txt"
 DOWNLOADED_MEETINGS_FOLDER = "downloadedMeetings"
 DEFAULT_COMBINED_VIDEO_NAME = "combine-output"
 COMBINED_VIDEO_FORMAT = "mkv"
+BBB_METADATA_FILENAME = "bbb-player-metadata.json"
+CURRENT_BBB_PLAYBACK_VERSION = "2.3.3"
+CURRENT_BBBINFO_VERSION = "1"
 SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
 
 logging.basicConfig(format="[%(asctime)s -%(levelname)8s]: %(message)s",
@@ -59,9 +63,11 @@ def ffmpegCombine(suffix, fileName=DEFAULT_COMBINED_VIDEO_NAME):
     ffmpeg.run(output)
 
 
-def downloadFiles(baseURL, basePath):
-    filesForDL = ["captions.json", "cursor.xml", "deskshare.xml", "presentation/deskshare.png", "metadata.xml", "panzooms.xml", "presentation_text.json",
-                  "shapes.svg", "slides_new.xml", "video/webcams.webm", "video/webcams.mp4", "deskshare/deskshare.webm", "deskshare/deskshare.mp4"]
+def downloadFiles(baseURL, basePath, bbbInfo):
+    filesForDL = ["captions.json", "cursor.xml", "deskshare.xml", "presentation/deskshare.png", "metadata.xml", "panzooms.xml", "presentation_text.json", "shapes.svg", "slides_new.xml",
+                  "video/webcams.webm", "video/webcams.mp4", "deskshare/deskshare.webm", "deskshare/deskshare.mp4", "notes.html", "talkers.json", "polls.json", "external_videos.json"]
+
+    bbbInfo["downloadedFiles"] = {}
 
     for i, file in enumerate(filesForDL):
         logger.info(f'[{i+1}/{len(filesForDL)}] Downloading {file}')
@@ -70,13 +76,21 @@ def downloadFiles(baseURL, basePath):
         savePath = os.path.join(basePath, file)
         logger.debug(savePath)
 
+        bbbInfo["downloadedFiles"][file] = False
+        saveBBBmetadata(basePath, bbbInfo)
+
         try:
             if smartDlEnabled:
-                smartDl = SmartDL(downloadURL, savePath, verify=checkCertificate)
+                smartDl = SmartDL(downloadURL, savePath,
+                                  verify=checkCertificate)
                 smartDl.start()
             else:
                 urllib.request.urlretrieve(
                     downloadURL, savePath, reporthook=bar.on_urlretrieve if bar else None)
+
+            bbbInfo["downloadedFiles"][file] = True
+            saveBBBmetadata(basePath, bbbInfo)
+
         except urllib.error.HTTPError as e:
             # traceback.print_exc()
             if e.code == 404:
@@ -84,27 +98,39 @@ def downloadFiles(baseURL, basePath):
         except Exception:
             logger.exception("")
 
+    return bbbInfo
 
-def downloadSlides(baseURL, basePath):
+
+def downloadSlides(baseURL, basePath, bbbInfo):
     # Part of this is based on https://www.programiz.com/python-programming/json
     with open(basePath + '/presentation_text.json', encoding="utf8") as f:
         data = json.load(f)
         logger.info(f"Downloading {len(data)} presentations")
+
+        bbbInfo["downloadedSlides"] = {}
+
         for element in data:
             logger.debug(element)
             noSlides = len(data[element])
             logger.debug(noSlides)
             createFolder(os.path.join(basePath, 'presentation', element))
             logger.info(f"Downloading {noSlides} slides for the presentation")
+
+            bbbInfo["downloadedSlides"][element] = {}
+
             for i in range(1, noSlides+1):
                 logger.debug(f"Downloading slide {i}/{noSlides}")
+                slideFilename = 'slide-' + str(i) + '.png'
                 downloadURL = baseURL + 'presentation/' + \
-                    element + '/slide-' + str(i) + '.png'
+                    element + "/" + slideFilename
                 savePath = os.path.join(basePath, 'presentation',
-                                        element,  'slide-{}.png'.format(i))
+                                        element,  slideFilename.format(i))
 
                 logger.debug(downloadURL)
                 logger.debug(savePath)
+
+                bbbInfo["downloadedSlides"][element][slideFilename] = False
+                saveBBBmetadata(basePath, bbbInfo)
 
                 try:
                     if smartDlEnabled:
@@ -114,6 +140,9 @@ def downloadSlides(baseURL, basePath):
                     else:
                         urllib.request.urlretrieve(
                             downloadURL, savePath, reporthook=bar.on_urlretrieve if bar else None)
+
+                    bbbInfo["downloadedSlides"][element][slideFilename] = True
+                    saveBBBmetadata(basePath, bbbInfo)
                 except urllib.error.HTTPError as e:
                     # traceback.print_exc()
                     if e.code == 404:
@@ -128,13 +157,17 @@ def downloadSlides(baseURL, basePath):
             logger.info(
                 f"Downloading {noSlides} thumbnails for the presentation")
             for i in range(1, noSlides+1):
+                slideThumbnailFilename = 'thumb-' + str(i) + '.png'
                 downloadURL = baseURL + 'presentation/' + \
-                    element + '/thumbnails/thumb-' + str(i) + '.png'
+                    element + "/thumbnails/" + slideThumbnailFilename
                 savePath = os.path.join(basePath, 'presentation',
-                                        element, 'thumbnails', 'thumb-{}.png'.format(i))
+                                        element, 'thumbnails', slideThumbnailFilename.format(i))
 
                 logger.debug(f"Download url:\t{downloadURL}")
                 logger.debug(f"Download path:\t{savePath}")
+
+                bbbInfo["downloadedSlides"][element][slideThumbnailFilename] = False
+                saveBBBmetadata(basePath, bbbInfo)
 
                 try:
                     if smartDlEnabled:
@@ -144,13 +177,17 @@ def downloadSlides(baseURL, basePath):
                     else:
                         urllib.request.urlretrieve(
                             downloadURL, savePath, reporthook=bar.on_urlretrieve if bar else None)
+
+                    bbbInfo["downloadedSlides"][element][slideThumbnailFilename] = True
+                    saveBBBmetadata(basePath, bbbInfo)
                 except urllib.error.HTTPError as e:
                     # traceback.print_exc()
                     if e.code == 404:
                         logger.warning(
-                            f"Did not download {element}/slide-{str(i)}.png")
+                            f"Did not download {element}/thumbnails/{slideThumbnailFilename}")
                 except Exception:
                     logger.exception("")
+    return bbbInfo
 
 
 def createFolder(path):
@@ -259,6 +296,12 @@ Download at least one meeting first using the --download argument")
 
 
 def downloadScript(inputURL, meetingNameWanted):
+    bbbInfo = {}
+    bbbInfo["CURRENT_BBBINFO_VERSION"] = CURRENT_BBBINFO_VERSION
+    bbbInfo["allDone"] = False
+    bbbInfo["inputURL"] = inputURL
+    bbbInfo["meetingNameWanted"] = meetingNameWanted
+
     # get meeting id from url https://regex101.com/r/UjqGeo/3
     matchesURL = re.search(r"/?(\d+\.\d+)/.*?([0-9a-f]{40}-\d{13})/?",
                            inputURL,
@@ -268,6 +311,9 @@ def downloadScript(inputURL, meetingNameWanted):
         meetingId = matchesURL.group(2)
         logger.info(f"Detected bbb version:\t{bbbVersion}")
         logger.info(f"Detected meeting id:\t{meetingId}")
+
+        bbbInfo["detectedBBBversion"] = bbbVersion
+        bbbInfo["meetingId"] = meetingId
     else:
         logger.error("Meeting ID could not be found in the url.")
         exit(1)
@@ -276,6 +322,8 @@ def downloadScript(inputURL, meetingNameWanted):
                                                 urlparse(inputURL).netloc,
                                                 meetingId)
     logger.debug("Base url: {}".format(baseURL))
+
+    bbbInfo["baseURL"] = baseURL
 
     if meetingNameWanted:
         folderPath = os.path.join(
@@ -292,23 +340,42 @@ def downloadScript(inputURL, meetingNameWanted):
             "Folder already created but not everything was downloaded. Retrying.")
         # todo: maybe delete contents of the folder
 
+        bbbInfo["downloadCompleted"] = False
+
         foldersToCreate = [os.path.join(folderPath, x) for x in [
             "", "video", "deskshare", "presentation"]]
         # logger.info(foldersToCreate)
         for i in foldersToCreate:
             createFolder(i)
 
-        downloadFiles(baseURL, folderPath)
-        downloadSlides(baseURL, folderPath)
+        bbbInfo["downloadStartTime"] = time.time()
+        saveBBBmetadata(folderPath, bbbInfo)
+
+        bbbInfo = downloadFiles(baseURL, folderPath, bbbInfo)
+        bbbInfo = downloadSlides(baseURL, folderPath, bbbInfo)
+
+        bbbInfo["downloadEndTime"] = time.time()
+        bbbInfo["downloadCompleted"] = True
+        saveBBBmetadata(folderPath, bbbInfo)
 
         # Copy the 2.3 player
         copy_tree(os.path.join(SCRIPT_DIR, "player23"), folderPath)
+        bbbInfo["copiedBBBplaybackVersion"] = CURRENT_BBB_PLAYBACK_VERSION
+        saveBBBmetadata(folderPath, bbbInfo)
 
         with open(os.path.join(folderPath, DOWNLOADED_FULLY_FILENAME), 'w') as fp:
             # write a downloaded_fully file to mark a successful download
             # todo: check if files were really dl-ed (make a json of files to download and
             #          check them one by one on success)
             pass
+
+        bbbInfo["allDone"] = True
+        saveBBBmetadata(folderPath, bbbInfo)
+
+
+def saveBBBmetadata(folderPath, bbbInfo):
+    with open(os.path.join(folderPath, BBB_METADATA_FILENAME), 'w') as bjf:
+        json.dump(bbbInfo, bjf)
 
 
 if __name__ == "__main__":
