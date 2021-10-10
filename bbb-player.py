@@ -9,6 +9,7 @@ import re
 from datetime import timedelta
 import logging
 import time
+from shutil import copytree
 
 LOGGING_LEVEL = logging.INFO
 # LOGGING_LEVEL = logging.DEBUG
@@ -17,7 +18,7 @@ DOWNLOADED_MEETINGS_FOLDER = "downloadedMeetings"
 DEFAULT_COMBINED_VIDEO_NAME = "combine-output"
 COMBINED_VIDEO_FORMAT = "mkv"
 BBB_METADATA_FILENAME = "bbb-player-metadata.json"
-CURRENT_BBB_PLAYBACK_VERSION = "2.3.3"
+CURRENT_BBB_PLAYBACK_VERSION = "3.1.1"
 CURRENT_BBBINFO_VERSION = "1"
 SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
 
@@ -200,6 +201,16 @@ def createFolder(path):
         logger.debug("Successfully created the directory %s " % path)
 
 
+def copyFolderContents(src, dst):
+    # This function copies files and folders from the src folder to the dst folder. If files already exist, it overwrites them.
+    try:
+        logger.debug("Using copytree")
+        copytree(src, dst)
+    except:
+        logger.debug("Using copy_tree")
+        copy_tree(src, dst)
+
+
 def create_app():
     logger.info("Server")
 
@@ -220,22 +231,22 @@ Download at least one meeting first using the --download argument")
 
     logger.debug(f"Current path: {os.getcwd()}")
 
-    # check if an older bbb version recording exists and copy 2.3 player to it:
+    # check if an older bbb version recording exists and copy 3 player to it:
     meetingFolders = sorted([folder for folder in os.listdir(
         downloadedMeetingsFolderPath) if os.path.isdir(os.path.join(downloadedMeetingsFolderPath, folder))])
     for m in meetingFolders:
         # get links to correct html files in folders of downloaded meetings
         if (os.path.isfile(os.path.join(downloadedMeetingsFolderPath, m, 'index.html'))
                 and os.path.isfile(os.path.join(downloadedMeetingsFolderPath, m, 'asset-manifest.json'))):
-            # bbb 2.3 has index.html
+            # bbb 3 has index.html
             pass
         else:
-            # bbb 2.0 - copy bbb 2.3 player over it
+            # bbb 2.0 - copy bbb 3 player over it
             logger.info(
-                f"An older 2.0 bbb player detected in meeting {m}. Copying 2.3 player over it")
-            player23Folder = os.path.join(SCRIPT_DIR, "player23")
+                f"An older 2.0 bbb player detected in meeting {m}. Copying 3 player over it")
+            player3Folder = os.path.join(SCRIPT_DIR, "player3")
             meetingFolder = os.path.join(downloadedMeetingsFolderPath, m)
-            copy_tree(player23Folder, meetingFolder)
+            copyFolderContents(player3Folder, meetingFolder)
 
     # Based on https://stackoverflow.com/a/42791810
     # Flask is needed for HTTP 206 Partial Content support.
@@ -276,7 +287,7 @@ Download at least one meeting first using the --download argument")
         for m in meetingFolders:
             # get links to correct html files in folders of downloaded meetings
             if (os.path.isfile(os.path.join(downloadedMeetingsFolderPath, m, 'index.html')) and os.path.isfile(os.path.join(downloadedMeetingsFolderPath, m, 'asset-manifest.json'))):
-                # bbb 2.3 has index.html
+                # bbb 2.3 and 3 have index.html
                 meetingLinks.append(
                     [f"/{DOWNLOADED_MEETINGS_FOLDER}/{m}/index.html", m])
             else:
@@ -358,8 +369,8 @@ def downloadScript(inputURL, meetingNameWanted):
         bbbInfo["downloadCompleted"] = True
         saveBBBmetadata(folderPath, bbbInfo)
 
-        # Copy the 2.3 player
-        copy_tree(os.path.join(SCRIPT_DIR, "player23"), folderPath)
+        # Copy the 3 player
+        copyFolderContents(os.path.join(SCRIPT_DIR, "player3"), folderPath)
         bbbInfo["copiedBBBplaybackVersion"] = CURRENT_BBB_PLAYBACK_VERSION
         saveBBBmetadata(folderPath, bbbInfo)
 
