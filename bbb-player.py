@@ -10,6 +10,7 @@ from datetime import timedelta
 import logging
 import time
 from shutil import copytree
+import webbrowser
 
 LOGGING_LEVEL = logging.INFO
 # LOGGING_LEVEL = logging.DEBUG
@@ -444,6 +445,11 @@ if __name__ == "__main__":
         logger.info('http://localhost:5000')
         logger.info('Press CTRL+C when done.')
         logger.info('---------')
+
+        try:
+            webbrowser.open("http://localhost:5000", new=0, autoraise=True)
+        except:
+            pass
 
         app.run(host='0.0.0.0', port=5000)
 
