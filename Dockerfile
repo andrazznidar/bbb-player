@@ -1,4 +1,4 @@
-FROM python:3.7-alpine
+FROM python:3.10-alpine
 WORKDIR /app
 COPY requirements.txt /app
 RUN apk add --no-cache ffmpeg
