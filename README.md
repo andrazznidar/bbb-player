@@ -3,31 +3,22 @@
 Download public BigBlueButton recordings and play them offline.
 Playback is to a great extent based on the BigBlueButton frontend called [bbb-playback](https://github.com/bigbluebutton/bbb-playback).
 
-### Quickstart:
+## Quickstart (recommended):
+0. You must have [Docker](https://www.docker.com/products/docker-desktop).
 
-Must have **Python3.6** or later (with **pip**)
+1. Use the folowing command where `/path/to/your/folder/myBBBmeetings` is an absolute path to a folder where you wish to download recordings.
+>`docker run -d --rm --name bbb-player -p 5000:5000 -v /path/to/your/folder/myBBBmeetings:/app/downloadedMeetings andrazznidar/bbb-player`
 
-```bash
-# download and create a virtual environment
-git clone git@github.com:andrazznidar/bbb-player.git && cd bbb-player
-python3 -m venv env && source ./env/bin/activate
-pip install -r requirements.txt
+2. Open a modern web browser and download or play meetings on `http://localhost:5000/`.
 
-# to download the meetings:
-source ./env/bin/activate
-python bbb-player.py -d bbb_recoding_https_url -n name_of_the_meeting
+3. When you are done you can use `docker stop bbb-player` to stop the container.
 
-# to serve a webpage where all the meetings are available
-source ./env/bin/activate
-python bbb-player.py -s
-
-# to deactivate the virtual env:
-deactivate
-```
 
 ## Detailed usage
 
-1. Download and unzip this repo.
+Must have **Python3.6** or later with **pip**. But not **Python3.12** or newer.
+
+1. Download and unzip this repo (or use `git clone https://github.com/andrazznidar/bbb-player.git`).
 1. Change working directory of your system console to this repo.
 1. Optionally create a virtual environment: `python3 -m venv env` and activate it: `source ./env/bin/activate`
 1. Install `requrements.txt` using: `pip install -r requirements.txt`
@@ -37,7 +28,7 @@ deactivate
 1. Serve a single web page with all the meetings with `python bbb-player.py -s`
 1. Open a modern web browser and play the downloaded meeting on `http://localhost:5000/`.
    ![Favourite-meeting](https://user-images.githubusercontent.com/8482843/111150619-9a915c80-858e-11eb-9bd9-e256e8272acf.png)
-1. When done press `CTRL+C` in the system console to stop the local server. And `deactivate` to exit the virtual env
+1. When done press `CTRL+C` in the system console to stop the local server. And `deactivate` to exit the virtual env if you enabled it.
 
 ## Combining
 
