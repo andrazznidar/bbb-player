@@ -3,6 +3,17 @@
 Download public BigBlueButton recordings and play them offline.
 Playback is to a great extent based on the BigBlueButton frontend called [bbb-playback](https://github.com/bigbluebutton/bbb-playback).
 
+## Easy No-Install Playback in a Firefox browser with network connection:
+If someone sent you a folder downloaded with bbb-player you can easily play the recording without installing anything.
+
+0. Unzip the folder if it is zipped.
+1. Open [servefolder.dev](https://servefolder.dev) in a desktop Firefox (ex. on Windows or macOS).
+2. Click `Browse...`.
+3. Select the folder of the meeting (make sure the selected folder contains folders like `static` and `styles`).
+4. Click `Upload` and confirm. Please note that the files will not be actually uploaded. [Here is how it works.](https://github.com/AshleyScirra/servefolder.dev)
+5. Click the generated link and enjoy the recording.
+
+
 ## Quickstart (recommended):
 0. You must have [Docker](https://www.docker.com/products/docker-desktop).
 
