@@ -439,6 +439,10 @@ if __name__ == "__main__":
                        help="download the BBB conferences listed in this file \
                             (one url per line) \
                             you can use the -n argument to define names for the conferences from a file")
+    group.add_argument("-sq", "--sequence", type=str, nargs=1,
+                       help="use this argument for sequential naming of the conferences \
+                            (e.g. meeting1, meeting2, meeting3, ...) \
+                            example: -dl urls.txt -sq video-")
     group.add_argument("-s", "--server", action="store_true",
                        help="launch a server with all available downloaded meetings listed on one page")
     group.add_argument("-c", "--combine", type=str, nargs=1,
@@ -480,7 +484,7 @@ if __name__ == "__main__":
     elif args.download_list is not None and args.download is None and args.server is False and args.combine is None:
         logger.info(f"Download links from file: {args.download_list[0]}")
         meetingNamesWanted = []
-        if args.name:
+        if args.name and args.sequence is None:
             logger.info("Reading meeting names from file.")
             with open(args.name[0], 'r', encoding="utf-8") as f:
                 names = f.read().rstrip()
@@ -489,10 +493,16 @@ if __name__ == "__main__":
 
         inputFile = args.download_list[0]
         with open(inputFile, 'r', encoding="utf-8") as f:
-            for line in f:
+            for count, line in enumerate(f):
+                count += 1
                 line = line.strip()
                 if meetingNamesWanted:
                     meetingNameWanted = meetingNamesWanted.pop(0)
+                    logger.info(f"Naming the meeting as: {meetingNameWanted}")
+                    logger.info(f"Downloading link: {line}")
+                    downloadScript(line, meetingNameWanted)
+                elif args.sequence is not None:
+                    meetingNameWanted = args.sequence[0] + str(count).zfill(2)
                     logger.info(f"Naming the meeting as: {meetingNameWanted}")
                     logger.info(f"Downloading link: {line}")
                     downloadScript(line, meetingNameWanted)
