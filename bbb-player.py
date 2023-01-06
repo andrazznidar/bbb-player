@@ -473,7 +473,7 @@ if __name__ == "__main__":
                     logger.info(f"Downloading link: {line}")
                     downloadScript(line, meetingNameWanted)
                 elif args.sequence is not None:
-                    meetingNameWanted = args.sequence[0] + str(count)
+                    meetingNameWanted = args.sequence[0] + str(count).zfill(2)
                     logger.info(f"Naming the meeting as: {meetingNameWanted}")
                     logger.info(f"Downloading link: {line}")
                     downloadScript(line, meetingNameWanted)
