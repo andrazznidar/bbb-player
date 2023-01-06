@@ -23,9 +23,38 @@ CURRENT_BBB_PLAYBACK_VERSION = "3.1.1"
 CURRENT_BBBINFO_VERSION = "1"
 SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
 
+
+# This function is based on https://stackoverflow.com/a/56944256
+class CustomFormatter(logging.Formatter):
+
+    grey = "\x1b[38;20m"
+    yellow = "\x1b[33;20m"
+    red = "\x1b[31;20m"
+    bold_red = "\x1b[31;1m"
+    reset = "\x1b[0m"
+    format = "[%(asctime)s -%(levelname)8s]: %(message)s"
+
+    FORMATS = {
+        logging.DEBUG: grey + format + reset,
+        logging.INFO: grey + format + reset,
+        logging.WARNING: yellow + format + reset,
+        logging.ERROR: red + format + reset,
+        logging.CRITICAL: bold_red + format + reset
+    }
+
+    def format(self, record):
+        log_fmt = self.FORMATS.get(record.levelno)
+        formatter = logging.Formatter(log_fmt, "%H:%M:%S")
+        return formatter.format(record)
+
+
+ch = logging.StreamHandler()
+ch.setLevel(LOGGING_LEVEL)
+ch.setFormatter(CustomFormatter())
 logging.basicConfig(format="[%(asctime)s -%(levelname)8s]: %(message)s",
                     datefmt="%H:%M:%S",
-                    level=LOGGING_LEVEL)
+                    level=LOGGING_LEVEL,
+                    handlers=[ch])
 logger = logging.getLogger('bbb-player')
 
 # try to import pySmartDL else use plain old urllib
