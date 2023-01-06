@@ -31,12 +31,14 @@ logger = logging.getLogger('bbb-player')
 # try to import pySmartDL else use plain old urllib
 try:
     from pySmartDL import SmartDL
+
     smartDlEnabled = True
 except ImportError:
     logger.warning("pySmartDL not imported, using urllib instead")
     smartDlEnabled = False
     try:
         from progressist import ProgressBar
+
         bar = ProgressBar(throttle=timedelta(seconds=1),
                           template="Download |{animation}|{tta}| {done:B}/{total:B} at {speed:B}/s")
     except:
@@ -66,13 +68,15 @@ def ffmpegCombine(suffix, fileName=DEFAULT_COMBINED_VIDEO_NAME):
 
 
 def downloadFiles(baseURL, basePath, bbbInfo):
-    filesForDL = ["captions.json", "cursor.xml", "deskshare.xml", "presentation/deskshare.png", "metadata.xml", "panzooms.xml", "presentation_text.json", "shapes.svg", "slides_new.xml",
-                  "video/webcams.webm", "video/webcams.mp4", "deskshare/deskshare.webm", "deskshare/deskshare.mp4", "notes.html", "talkers.json", "polls.json", "external_videos.json"]
+    filesForDL = ["captions.json", "cursor.xml", "deskshare.xml", "presentation/deskshare.png", "metadata.xml",
+                  "panzooms.xml", "presentation_text.json", "shapes.svg", "slides_new.xml",
+                  "video/webcams.webm", "video/webcams.mp4", "deskshare/deskshare.webm", "deskshare/deskshare.mp4",
+                  "notes.html", "talkers.json", "polls.json", "external_videos.json"]
 
     bbbInfo["downloadedFiles"] = {}
 
     for i, file in enumerate(filesForDL):
-        logger.info(f'[{i+1}/{len(filesForDL)}] Downloading {file}')
+        logger.info(f'[{i + 1}/{len(filesForDL)}] Downloading {file}')
         downloadURL = baseURL + file
         logger.debug(downloadURL)
         savePath = os.path.join(basePath, file)
@@ -120,13 +124,13 @@ def downloadSlides(baseURL, basePath, bbbInfo):
 
             bbbInfo["downloadedSlides"][element] = {}
 
-            for i in range(1, noSlides+1):
+            for i in range(1, noSlides + 1):
                 logger.debug(f"Downloading slide {i}/{noSlides}")
                 slideFilename = 'slide-' + str(i) + '.png'
                 downloadURL = baseURL + 'presentation/' + \
-                    element + "/" + slideFilename
+                              element + "/" + slideFilename
                 savePath = os.path.join(basePath, 'presentation',
-                                        element,  slideFilename.format(i))
+                                        element, slideFilename.format(i))
 
                 logger.debug(downloadURL)
                 logger.debug(savePath)
@@ -158,10 +162,10 @@ def downloadSlides(baseURL, basePath, bbbInfo):
 
             logger.info(
                 f"Downloading {noSlides} thumbnails for the presentation")
-            for i in range(1, noSlides+1):
+            for i in range(1, noSlides + 1):
                 slideThumbnailFilename = 'thumb-' + str(i) + '.png'
                 downloadURL = baseURL + 'presentation/' + \
-                    element + "/thumbnails/" + slideThumbnailFilename
+                              element + "/thumbnails/" + slideThumbnailFilename
                 savePath = os.path.join(basePath, 'presentation',
                                         element, 'thumbnails', slideThumbnailFilename.format(i))
 
@@ -273,11 +277,12 @@ Download at least one meeting first using the --download argument")
         else:
             message = f"Error occured when trying to add a meeting to download queue."
 
-        #message += " (NOT IMPLEMENTED)"
+        # message += " (NOT IMPLEMENTED)"
         return hello(message=message)
 
     @app.route("/", methods=["GET"])
-    def hello(message='You should download new meetings from the command line. Run "python3 bbb-player.py --help" for help. You can try this form if you are feeling adventurous.'):
+    def hello(
+            message='You should download new meetings from the command line. Run "python3 bbb-player.py --help" for help. You can try this form if you are feeling adventurous.'):
         # list all folders in DOWNLOADED_MEETINGS_FOLDER
         meetingFolders = sorted([folder for folder in os.listdir(
             downloadedMeetingsFolderPath) if os.path.isdir(os.path.join(downloadedMeetingsFolderPath, folder))])
@@ -287,7 +292,8 @@ Download at least one meeting first using the --download argument")
         meetingLinks = []
         for m in meetingFolders:
             # get links to correct html files in folders of downloaded meetings
-            if (os.path.isfile(os.path.join(downloadedMeetingsFolderPath, m, 'index.html')) and os.path.isfile(os.path.join(downloadedMeetingsFolderPath, m, 'asset-manifest.json'))):
+            if (os.path.isfile(os.path.join(downloadedMeetingsFolderPath, m, 'index.html')) and os.path.isfile(
+                    os.path.join(downloadedMeetingsFolderPath, m, 'asset-manifest.json'))):
                 # bbb 2.3 and 3 have index.html
                 meetingLinks.append(
                     [f"/{DOWNLOADED_MEETINGS_FOLDER}/{m}/index.html", m])
@@ -400,6 +406,10 @@ if __name__ == "__main__":
                        help="download the BBB conference linked here")
     group.add_argument("-n", "--name", type=str, nargs=1,
                        help="define name of the conference (e.g. meeting1)")
+    group.add_argument("-dl", "--download-list", type=str, nargs=1,
+                       help="download the BBB conferences listed in this file \
+                            (one url per line) \
+                            you can use the -n argument to define names for the conferences from a file")
     group.add_argument("-s", "--server", action="store_true",
                        help="launch a server with all available downloaded meetings listed on one page")
     group.add_argument("-c", "--combine", type=str, nargs=1,
@@ -420,24 +430,49 @@ if __name__ == "__main__":
         if smartDlEnabled == False:
             # turn off certificate checking for urllib
             import ssl
+
             ssl._create_default_https_context = ssl._create_unverified_context
 
     if args.verbose:
         LOGGING_LEVEL = logging.DEBUG
         logger.setLevel(LOGGING_LEVEL)
 
-    if(args.download != None and args.server == False and args.combine == None):
+    if (args.download != None and args.server == False and args.combine == None and args.download_list == None):
         logger.info("Download")
-        inputURL = args.download[0]
+        inputFile = args.download[0]
 
         meetingNameWanted = None
         if args.name:
             meetingNameWanted = args.name[0].strip().replace(" ", "_")
             logger.info(f"Naming the meeting as: {meetingNameWanted}")
 
-        downloadScript(inputURL, meetingNameWanted)
+        downloadScript(inputFile, meetingNameWanted)
 
-    elif(args.server == True and args.name == args.download == args.combine == None):
+    elif args.download_list is not None and args.download is None and args.server is False and args.combine is None:
+        logger.info(f"Download links from file: {args.download_list[0]}")
+        meetingNamesWanted = []
+        if args.name:
+            logger.info("Reading meeting names from file.")
+            with open(args.name[0], 'r', encoding="utf-8") as f:
+                names = f.read().rstrip()
+                meetingNameWanted = names[0].strip().replace(" ", "_")
+                meetingNamesWanted.append(meetingNameWanted)
+
+        inputFile = args.download_list[0]
+        with open(inputFile, 'r', encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if meetingNamesWanted:
+                    meetingNameWanted = meetingNamesWanted.pop(0)
+                    logger.info(f"Naming the meeting as: {meetingNameWanted}")
+                    logger.info(f"Downloading link: {line}")
+                    downloadScript(line, meetingNameWanted)
+                else:
+                    logger.info('No name provided for the meeting. Using the meeting id as name.')
+                    logger.info(f"Downloading link: {line}")
+                    downloadScript(line, None)
+
+    elif (args.server == True and args.name == args.download == args.combine == None and args.download_list == None):
         app = create_app()
 
         logger.info('---------')
@@ -453,7 +488,7 @@ if __name__ == "__main__":
 
         app.run(host='0.0.0.0', port=5000)
 
-    elif(args.combine != None and args.name == args.download == None and args.server == False):
+    elif (args.combine != None and args.name == args.download == None and args.server == False and args.download_list == None):
         logger.info("Combine")
         fileIdOrName = args.combine[0]
 
@@ -479,13 +514,13 @@ if __name__ == "__main__":
             fileName = fileIdOrName
             # todo: add name parsing from -n
 
-        if(os.path.isfile(f'./{fileName}.{COMBINED_VIDEO_FORMAT}')):
+        if (os.path.isfile(f'./{fileName}.{COMBINED_VIDEO_FORMAT}')):
             logger.warning(
                 f'./{DEFAULT_COMBINED_VIDEO_NAME}.{COMBINED_VIDEO_FORMAT} already found. Aborting.')
             exit(1)
-        elif(os.path.isfile('./deskshare/deskshare.webm') and os.path.isfile('./video/webcams.webm')):
+        elif (os.path.isfile('./deskshare/deskshare.webm') and os.path.isfile('./video/webcams.webm')):
             ffmpegCombine('webm', fileName=fileName)
-        elif(os.path.isfile('./deskshare/deskshare.mp4') and os.path.isfile('./video/webcams.mp4')):
+        elif (os.path.isfile('./deskshare/deskshare.mp4') and os.path.isfile('./video/webcams.mp4')):
             ffmpegCombine('mp4', fileName=fileName)
         else:
             logger.error(
