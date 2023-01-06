@@ -465,6 +465,7 @@ if __name__ == "__main__":
         inputFile = args.download_list[0]
         with open(inputFile, 'r', encoding="utf-8") as f:
             for count, line in enumerate(f):
+                count += 1
                 line = line.strip()
                 if meetingNamesWanted:
                     meetingNameWanted = meetingNamesWanted.pop(0)
